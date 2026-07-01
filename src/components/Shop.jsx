@@ -3,6 +3,23 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import { API_URL } from "../config";
 
+// Tracks whether the viewport is "mobile" width, reacting to resize/rotate.
+function useIsMobileViewport() {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia("(max-width: 768px)").matches : false
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const mq = window.matchMedia("(max-width: 768px)");
+    const handler = (e) => setIsMobile(e.matches);
+    mq.addEventListener?.("change", handler);
+    return () => mq.removeEventListener?.("change", handler);
+  }, []);
+
+  return isMobile;
+}
+
 const CATEGORIES = ["All", "Casual", "Corporate", "Streetwear", "Athleisure", "Accessories"];
 const DEFAULT_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 
@@ -445,19 +462,19 @@ export default function Shop() {
     [active, products]
   );
 
-  const canLoop = filtered.length > 1;
-  const track = canLoop ? [...filtered, ...filtered] : filtered;
-  const durationSeconds = Math.max(8, filtered.length * 3);
-
   const trackRef = useRef(null);
   const isPausedRef = useRef(false);
   const resumeTimeoutRef = useRef(null);
+  const isMobileViewport = useIsMobileViewport();
+
+  const canLoop = filtered.length > 1 && !isMobileViewport;
+  const track = canLoop ? [...filtered, ...filtered] : filtered;
+  const durationSeconds = Math.max(8, filtered.length * 3);
 
   // Drives the marquee by nudging scrollLeft on a real horizontally-
   // scrollable container (instead of a CSS transform), so touch devices
-  // get native swipe/drag for free while the autoplay keeps running.
-  // On narrow/mobile viewports the same px/s speed reads as sluggish
-  // (less of each card is visible at once), so it's sped up there.
+  // get native swipe/drag for free. Autoplay only runs on desktop —
+  // on mobile it's purely swipe-driven (no auto-scroll, no looping).
   useEffect(() => {
     const el = trackRef.current;
     if (!el || !canLoop) return undefined;
@@ -467,14 +484,6 @@ export default function Shop() {
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     if (prefersReducedMotion) return undefined;
 
-    const mobileQuery =
-      typeof window !== "undefined" ? window.matchMedia("(max-width: 768px)") : null;
-    let isMobile = mobileQuery?.matches ?? false;
-    const handleMobileChange = (e) => {
-      isMobile = e.matches;
-    };
-    mobileQuery?.addEventListener?.("change", handleMobileChange);
-
     let rafId;
     let last = performance.now();
 
@@ -483,8 +492,7 @@ export default function Shop() {
       last = now;
       if (!isPausedRef.current) {
         const halfWidth = el.scrollWidth / 2;
-        const effectiveDuration = isMobile ? durationSeconds / 2.5 : durationSeconds;
-        const pxPerSecond = halfWidth / effectiveDuration;
+        const pxPerSecond = halfWidth / durationSeconds;
         el.scrollLeft += pxPerSecond * dt;
         if (el.scrollLeft >= halfWidth) {
           el.scrollLeft -= halfWidth;
@@ -494,10 +502,7 @@ export default function Shop() {
     }
 
     rafId = requestAnimationFrame(step);
-    return () => {
-      cancelAnimationFrame(rafId);
-      mobileQuery?.removeEventListener?.("change", handleMobileChange);
-    };
+    return () => cancelAnimationFrame(rafId);
   }, [canLoop, durationSeconds, active, filtered.length]);
 
   function pauseMarquee() {
@@ -536,6 +541,18 @@ export default function Shop() {
         }
         .shop-track::-webkit-scrollbar {
           display: none;
+        }
+        @keyframes swipeHintNudge {
+          0%, 100% { transform: translateX(0); opacity: 0.6; }
+          50% { transform: translateX(5px); opacity: 1; }
+        }
+        .swipe-hint-icon {
+          animation: swipeHintNudge 1.4s ease-in-out infinite;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .swipe-hint-icon {
+            animation: none;
+          }
         }
       `}</style>
 
@@ -608,6 +625,12 @@ export default function Shop() {
                     <ShopCard key={`${product.id}-${i}`} product={product} onOpen={setOpenItem} />
                   ))}
             </div>
+            {!loading && (
+              <div className="mt-3 flex items-center gap-2 text-[0.65rem] uppercase tracking-[0.15em] text-black/40 dark:text-white/40 md:hidden">
+                <span>Swipe to explore</span>
+                <span className="swipe-hint-icon inline-block">→</span>
+              </div>
+            )}
           </div>
         )}
 
