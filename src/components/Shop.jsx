@@ -1,0 +1,561 @@
+import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+
+import { API_URL } from "../config";
+
+const CATEGORIES = ["All", "Casual", "Corporate", "Streetwear", "Athleisure", "Accessories"];
+const DEFAULT_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
+
+function formatPrice(price) {
+  if (price === null || price === undefined || price === "") return "";
+  return `₦${Number(price).toLocaleString()}`;
+}
+
+/* ---------------------------------------------------------- */
+/* Order modal — gallery + dynamic fit form, posts to Orders  */
+/* ---------------------------------------------------------- */
+
+function OrderModal({ item, onClose }) {
+  const [activeImg, setActiveImg] = useState(0);
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [form, setForm] = useState({
+    name: "", phone: "", email: "", sleeve: "", size: "", height: "", age: "", note: "",
+  });
+
+  useEffect(() => {
+    if (!item) return;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, [item]);
+
+  if (!item) return null;
+
+  const images = [item.image, ...(item.gallery || [])].filter(Boolean);
+  const has = (f) => (item.fields || []).includes(f);
+  const availableSizes = item.sizes && item.sizes.length > 0 ? item.sizes : DEFAULT_SIZES;
+
+  const handleBackdrop = (e) => {
+    if (e.target === e.currentTarget) onClose();
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    const payload = {
+      action: "createOrder",
+      order: {
+        productId: item.id,
+        productName: item.name,
+        category: item.category,
+        price: item.price,
+        ...form,
+      },
+    };
+    try {
+      const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || "Something went wrong");
+      setSubmitted(true);
+    } catch (err) {
+      setError(err.message || "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const whatsappText = encodeURIComponent(
+    `Hi, I just submitted an order interest for ${item.name} (${formatPrice(item.price)}). Following up here.`
+  );
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        className="fixed inset-0 z-[100] flex items-end justify-center bg-black/85 backdrop-blur-sm md:items-center md:p-8"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={handleBackdrop}
+      >
+        <motion.div
+          className="relative grid max-h-[96vh] w-full max-w-4xl grid-cols-1 overflow-y-auto border border-black/10 bg-white dark:border-white/10 dark:bg-black md:grid-cols-2 md:overflow-hidden"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white/90 transition-colors hover:bg-black/70 hover:text-white"
+          >
+            ✕
+          </button>
+
+          {/* Gallery */}
+          <div className="flex flex-col gap-3 p-5 md:overflow-y-auto md:p-6">
+            <div className="aspect-[4/5] w-full overflow-hidden bg-black/5 dark:bg-white/5">
+              <img
+                src={images[activeImg] || images[0]}
+                alt={item.name}
+                className="h-full w-full object-cover"
+              />
+            </div>
+            {images.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto">
+                {images.map((src, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setActiveImg(i)}
+                    className={`h-16 w-16 shrink-0 overflow-hidden border transition-colors ${
+                      activeImg === i
+                        ? "border-black dark:border-white"
+                        : "border-black/10 opacity-60 hover:opacity-100 dark:border-white/10"
+                    }`}
+                  >
+                    <img src={src} alt="" className="h-full w-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Info + form */}
+          <div className="flex flex-col p-5 md:overflow-y-auto md:p-8">
+            <span className="mb-1 block text-[0.65rem] uppercase tracking-[0.2em] text-black/40 dark:text-white/40">
+              {item.category}
+            </span>
+            <h3 className="mb-2 font-['Playfair_Display'] text-2xl font-semibold text-black dark:text-white">
+              {item.name}
+            </h3>
+            {item.description && (
+              <p className="mb-3 text-sm leading-relaxed text-black/60 dark:text-white/60">
+                {item.description}
+              </p>
+            )}
+            <p className="mb-6 font-['Playfair_Display'] text-xl text-black dark:text-white">
+              {formatPrice(item.price)}
+            </p>
+
+            {!item.inStock && (
+              <p className="mb-4 border border-black/20 bg-black/5 px-3 py-2 text-xs uppercase tracking-widest text-black/50 dark:border-white/20 dark:bg-white/5 dark:text-white/50">
+                Currently unavailable — enquire for restock updates
+              </p>
+            )}
+
+            {submitted ? (
+              <div className="flex flex-1 flex-col items-center justify-center gap-3 py-8 text-center">
+                <span className="font-['Playfair_Display'] text-3xl text-black dark:text-white">✦</span>
+                <h4 className="font-['Playfair_Display'] text-xl text-black dark:text-white">
+                  We've got your details
+                </h4>
+                <p className="max-w-xs text-sm text-black/60 dark:text-white/60">
+                  Our team will reach out to confirm your <strong>{item.name}</strong> order shortly.
+                </p>
+                <a
+                  href={`https://wa.me/2347031990126?text=${whatsappText}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 border border-black px-5 py-2.5 text-sm uppercase tracking-widest text-black transition-colors hover:bg-black hover:text-white dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-black"
+                >
+                  Follow up on WhatsApp
+                </a>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="mt-1 text-xs uppercase tracking-widest text-black/40 hover:text-black dark:text-white/40 dark:hover:text-white"
+                >
+                  Close
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="flex flex-col gap-4 font-['Work_Sans']">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
+                    Full name <span className="text-black/30 dark:text-white/30">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Your name"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    className="border border-black/15 bg-transparent px-3 py-2.5 text-sm text-black outline-none transition-colors focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
+                    Phone number <span className="text-black/30 dark:text-white/30">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="+234 800 000 0000"
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    className="border border-black/15 bg-transparent px-3 py-2.5 text-sm text-black outline-none transition-colors focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
+                    Email <span className="text-black/30 dark:text-white/30">(optional)</span>
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="you@email.com"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    className="border border-black/15 bg-transparent px-3 py-2.5 text-sm text-black outline-none transition-colors focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white"
+                  />
+                </div>
+
+                {(has("sleeve") || has("size") || has("height") || has("age") || has("note")) && (
+                  <p className="mt-1 text-xs uppercase tracking-widest text-black/40 dark:text-white/40">
+                    Tailor your fit <span className="normal-case text-black/30 dark:text-white/30">(all optional)</span>
+                  </p>
+                )}
+
+                {has("sleeve") && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
+                      Sleeve preference
+                    </label>
+                    <div className="flex gap-2">
+                      {["Short sleeve", "Long sleeve"].map((s) => (
+                        <button
+                          type="button"
+                          key={s}
+                          onClick={() => setForm({ ...form, sleeve: form.sleeve === s ? "" : s })}
+                          className={`border px-3 py-2 text-xs uppercase tracking-wide transition-colors ${
+                            form.sleeve === s
+                              ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
+                              : "border-black/15 text-black/60 hover:border-black/40 dark:border-white/15 dark:text-white/60 dark:hover:border-white/40"
+                          }`}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {has("size") && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
+                      Size
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {availableSizes.map((s) => (
+                        <button
+                          type="button"
+                          key={s}
+                          onClick={() => setForm({ ...form, size: form.size === s ? "" : s })}
+                          className={`h-9 w-9 border text-xs transition-colors ${
+                            form.size === s
+                              ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
+                              : "border-black/15 text-black/60 hover:border-black/40 dark:border-white/15 dark:text-white/60 dark:hover:border-white/40"
+                          }`}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {has("height") && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
+                      Height <span className="normal-case text-black/30 dark:text-white/30">(cm or ft)</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={`e.g. 175cm or 5'9"`}
+                      value={form.height}
+                      onChange={(e) => setForm({ ...form, height: e.target.value })}
+                      className="border border-black/15 bg-transparent px-3 py-2.5 text-sm text-black outline-none transition-colors focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white"
+                    />
+                  </div>
+                )}
+
+                {has("age") && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
+                      Age <span className="normal-case text-black/30 dark:text-white/30">(helps with fit)</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="120"
+                      placeholder="e.g. 28"
+                      value={form.age}
+                      onChange={(e) => setForm({ ...form, age: e.target.value })}
+                      className="border border-black/15 bg-transparent px-3 py-2.5 text-sm text-black outline-none transition-colors focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white"
+                    />
+                  </div>
+                )}
+
+                {has("note") && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
+                      Any requests <span className="normal-case text-black/30 dark:text-white/30">(optional)</span>
+                    </label>
+                    <textarea
+                      rows={2}
+                      placeholder="Custom print, colour preference, gift wrapping…"
+                      value={form.note}
+                      onChange={(e) => setForm({ ...form, note: e.target.value })}
+                      className="border border-black/15 bg-transparent px-3 py-2.5 text-sm text-black outline-none transition-colors focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white"
+                    />
+                  </div>
+                )}
+
+                {error && <p className="text-xs text-red-500">{error}</p>}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="mt-2 border border-black bg-black px-6 py-3 text-sm uppercase tracking-widest text-white transition-colors hover:bg-white hover:text-black disabled:opacity-50 dark:border-white dark:bg-white dark:text-black dark:hover:bg-black dark:hover:text-white"
+                >
+                  {loading ? "Sending…" : "Submit Order Interest"}
+                </button>
+              </form>
+            )}
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+/* ---------------------------------------------------------- */
+/* Product card                                                */
+/* ---------------------------------------------------------- */
+
+function ShopCard({ product, onOpen }) {
+  return (
+    <div
+      onClick={() => onOpen(product)}
+      className="group w-[280px] shrink-0 cursor-pointer snap-start border border-black/10 bg-black/[0.02] transition-all duration-300 hover:-translate-y-1 hover:border-black/30 dark:border-white/10 dark:bg-white/[0.02] dark:hover:border-white/30"
+    >
+      <div className="relative h-[340px] overflow-hidden">
+        <img
+          src={product.image}
+          alt={product.name}
+          loading="lazy"
+          className={`h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 ${
+            !product.inStock ? "grayscale" : ""
+          }`}
+        />
+        {product.tag && (
+          <span className="absolute left-3 top-3 bg-black px-2.5 py-1 text-[0.6rem] uppercase tracking-[0.15em] text-white dark:bg-white dark:text-black">
+            {product.tag}
+          </span>
+        )}
+        {!product.inStock && (
+          <span className="absolute right-3 top-3 border border-white/60 px-2 py-1 text-[0.6rem] uppercase tracking-widest text-white">
+            Sold Out
+          </span>
+        )}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+      </div>
+      <div className="p-4">
+        <span className="mb-1 block text-[0.62rem] uppercase tracking-[0.18em] text-black/40 dark:text-white/40">
+          {product.category}
+        </span>
+        <h3 className="mb-1 font-['Playfair_Display'] text-lg leading-tight text-black dark:text-white">
+          {product.name}
+        </h3>
+        <div className="mt-3 flex items-center justify-between">
+          <span className="font-['Playfair_Display'] text-base text-black dark:text-white">
+            {formatPrice(product.price)}
+          </span>
+          <span className="border border-black/20 px-3 py-1.5 text-[0.65rem] uppercase tracking-widest text-black/70 transition-colors group-hover:border-black group-hover:text-black dark:border-white/20 dark:text-white/70 dark:group-hover:border-white dark:group-hover:text-white">
+            View →
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ShopCardSkeleton() {
+  const pulse = "animate-pulse bg-black/10 dark:bg-white/10";
+  return (
+    <div className="w-[280px] shrink-0 border border-black/10 dark:border-white/10">
+      <div className={`h-[340px] ${pulse}`} />
+      <div className="flex flex-col gap-2 p-4">
+        <div className={`h-2.5 w-2/5 ${pulse}`} />
+        <div className={`h-4 w-3/4 ${pulse}`} />
+        <div className={`mt-2 h-5 w-1/3 ${pulse}`} />
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------- */
+/* Shop                                                         */
+/* ---------------------------------------------------------- */
+
+export default function Shop() {
+  const [active, setActive] = useState("All");
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [dataError, setDataError] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [openItem, setOpenItem] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadProducts() {
+      setLoading(true);
+      setDataError(null);
+      try {
+        const res = await fetch(`${API_URL}?action=list`);
+        if (!res.ok) throw new Error(`Request failed (${res.status})`);
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || "Failed to load products");
+        if (!cancelled) setProducts(data.products || []);
+      } catch (err) {
+        if (!cancelled) setDataError(err.message || "Could not load the shop");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadProducts();
+    return () => { cancelled = true; };
+  }, [refreshKey]);
+
+  const filtered = useMemo(
+    () =>
+      active === "All"
+        ? products
+        : products.filter(
+            (p) => String(p.category || "").trim().toLowerCase() === active.toLowerCase()
+          ),
+    [active, products]
+  );
+
+  const canLoop = filtered.length > 1;
+  const track = canLoop ? [...filtered, ...filtered] : filtered;
+  const durationSeconds = Math.max(8, filtered.length * 3);
+
+  return (
+    <section
+      id="shop"
+      className="border-t border-black/10 bg-white px-[clamp(1.5rem,5vw,6rem)] py-[clamp(5rem,10vw,9rem)] transition-colors dark:border-white/10 dark:bg-black"
+    >
+      <style>{`
+        @keyframes shopMarquee {
+          from { transform: translateX(-50%); }
+          to { transform: translateX(0); }
+        }
+        .shop-track {
+          animation: shopMarquee var(--marquee-duration, 40s) linear infinite;
+          will-change: transform;
+        }
+        .shop-track:hover {
+          animation-play-state: paused;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .shop-track {
+            animation: none;
+          }
+        }
+      `}</style>
+
+      <div className="mx-auto max-w-[1400px]">
+        <span className="mb-4 block text-[0.7rem] uppercase tracking-[0.3em] text-black/50 dark:text-white/50">
+          Official Store
+        </span>
+        <h2 className="mb-4 font-['Playfair_Display'] text-[clamp(2.2rem,5vw,3.5rem)] font-semibold leading-[1.05] text-black dark:text-white">
+          Shop the House.
+        </h2>
+        <p className="mb-8 max-w-md text-sm text-black/50 dark:text-white/50">
+          Every piece, made to order. Browse by category and let us know your fit.
+        </p>
+
+        {/* Filters */}
+        <div className="mb-10 flex flex-wrap gap-2 font-['Work_Sans']">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => setActive(cat)}
+              className={`border px-4 py-2 text-xs uppercase tracking-widest transition-colors ${
+                active === cat
+                  ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
+                  : "border-black/15 text-black/60 hover:border-black/40 hover:text-black dark:border-white/15 dark:text-white/60 dark:hover:border-white/40 dark:hover:text-white"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Error state */}
+        {!loading && dataError && (
+          <div className="flex flex-col items-center gap-4 py-16 text-center">
+            <p className="text-sm text-black/50 dark:text-white/50">Couldn't load the shop right now.</p>
+            <button
+              type="button"
+              onClick={() => setRefreshKey((k) => k + 1)}
+              className="border border-black px-5 py-2.5 text-sm uppercase tracking-widest text-black transition-colors hover:bg-black hover:text-white dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-black"
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!loading && !dataError && filtered.length === 0 && (
+          <p className="py-16 text-center text-sm text-black/40 dark:text-white/40">
+            Nothing in this category yet.
+          </p>
+        )}
+
+        {/* Scroll strip */}
+        {(loading || (!dataError && filtered.length > 0)) && (
+          <div className="-mx-[clamp(1.5rem,5vw,6rem)] overflow-hidden px-[clamp(1.5rem,5vw,6rem)] pb-3">
+            <div
+              className={`flex gap-4 ${canLoop ? "shop-track" : ""}`}
+              style={canLoop ? { "--marquee-duration": `${durationSeconds}s` } : undefined}
+            >
+              {loading
+                ? Array.from({ length: 4 }).map((_, i) => <ShopCardSkeleton key={i} />)
+                : track.map((product, i) => (
+                    <ShopCard key={`${product.id}-${i}`} product={product} onOpen={setOpenItem} />
+                  ))}
+            </div>
+          </div>
+        )}
+
+        {/* Bulk / custom order CTA */}
+        <div className="mt-14 flex flex-wrap items-center justify-between gap-4 border-t border-black/10 pt-8 dark:border-white/10">
+          <p className="text-sm text-black/50 dark:text-white/50">
+            Want a custom order or bulk gear for your team?
+          </p>
+          <a
+            href="https://wa.me/2347031990126?text=Hi%2C%20I%27d%20like%20to%20enquire%20about%20a%20custom%20or%20bulk%20order."
+            target="_blank"
+            rel="noopener noreferrer"
+            className="border border-black bg-black px-6 py-3 text-sm uppercase tracking-widest text-white transition-colors hover:bg-white hover:text-black dark:border-white dark:bg-white dark:text-black dark:hover:bg-black dark:hover:text-white"
+          >
+            Get in Touch
+          </a>
+        </div>
+      </div>
+
+      <OrderModal item={openItem} onClose={() => setOpenItem(null)} />
+    </section>
+  );
+}
