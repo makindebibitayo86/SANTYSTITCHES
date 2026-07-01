@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { API_URL } from "../config";
@@ -208,6 +208,10 @@ export default function Collections() {
   const [dataError, setDataError] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  const trackRef = useRef(null);
+  const isPausedRef = useRef(false);
+  const resumeTimeoutRef = useRef(null);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -248,27 +252,85 @@ export default function Collections() {
   const track = canLoop ? [...trios, ...trios] : trios;
   const durationSeconds = Math.max(20, trios.length * 8);
 
+  // Drives the marquee by nudging scrollLeft on a real horizontally-
+  // scrollable container (instead of a CSS transform), so touch devices
+  // get native swipe/drag for free while the autoplay keeps running.
+  // On narrow/mobile viewports the same px/s speed reads as sluggish
+  // (less of each card is visible at once), so it's sped up there.
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el || !canLoop) return undefined;
+
+    const prefersReducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReducedMotion) return undefined;
+
+    const mobileQuery =
+      typeof window !== "undefined" ? window.matchMedia("(max-width: 768px)") : null;
+    let isMobile = mobileQuery?.matches ?? false;
+    const handleMobileChange = (e) => {
+      isMobile = e.matches;
+    };
+    mobileQuery?.addEventListener?.("change", handleMobileChange);
+
+    let rafId;
+    let last = performance.now();
+
+    function step(now) {
+      const dt = (now - last) / 1000;
+      last = now;
+      if (!isPausedRef.current) {
+        const halfWidth = el.scrollWidth / 2;
+        const effectiveDuration = isMobile ? durationSeconds / 2.5 : durationSeconds;
+        const pxPerSecond = halfWidth / effectiveDuration;
+        el.scrollLeft += pxPerSecond * dt;
+        if (el.scrollLeft >= halfWidth) {
+          el.scrollLeft -= halfWidth;
+        }
+      }
+      rafId = requestAnimationFrame(step);
+    }
+
+    rafId = requestAnimationFrame(step);
+    return () => {
+      cancelAnimationFrame(rafId);
+      mobileQuery?.removeEventListener?.("change", handleMobileChange);
+    };
+  }, [canLoop, durationSeconds, tab, filtered.length]);
+
+  function pauseMarquee() {
+    isPausedRef.current = true;
+    if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
+  }
+
+  function resumeMarquee(delay = 1200) {
+    if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
+    resumeTimeoutRef.current = setTimeout(() => {
+      isPausedRef.current = false;
+    }, delay);
+  }
+
+  useEffect(
+    () => () => {
+      if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
+    },
+    []
+  );
+
   return (
     <section
       id="collections"
       className="overflow-hidden bg-white px-[clamp(1.5rem,5vw,6rem)] py-[clamp(5rem,10vw,9rem)] transition-colors dark:bg-black"
     >
       <style>{`
-        @keyframes collectionsMarquee {
-          from { transform: translateX(0); }
-          to { transform: translateX(-50%); }
-        }
         .collections-track {
-          animation: collectionsMarquee var(--marquee-duration, 40s) linear infinite;
-          will-change: transform;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
         }
-        .collections-track:hover {
-          animation-play-state: paused;
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .collections-track {
-            animation: none;
-          }
+        .collections-track::-webkit-scrollbar {
+          display: none;
         }
       `}</style>
 
@@ -352,12 +414,18 @@ export default function Collections() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={tab}
+                ref={trackRef}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className={`flex gap-4 ${canLoop ? "collections-track" : ""}`}
-                style={canLoop ? { "--marquee-duration": `${durationSeconds}s` } : undefined}
+                className="collections-track flex touch-pan-x gap-4 overflow-x-auto"
+                style={{ WebkitOverflowScrolling: "touch" }}
+                onMouseEnter={pauseMarquee}
+                onMouseLeave={() => resumeMarquee(0)}
+                onTouchStart={pauseMarquee}
+                onTouchEnd={() => resumeMarquee(1500)}
+                onTouchCancel={() => resumeMarquee(1500)}
               >
                 {track.map((trio, i) => (
                   <Trio key={`${trio.key}-${i}`} trio={trio} onOpen={setActiveProduct} />

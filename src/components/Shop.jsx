@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { API_URL } from "../config";
@@ -449,27 +449,93 @@ export default function Shop() {
   const track = canLoop ? [...filtered, ...filtered] : filtered;
   const durationSeconds = Math.max(8, filtered.length * 3);
 
+  const trackRef = useRef(null);
+  const isPausedRef = useRef(false);
+  const resumeTimeoutRef = useRef(null);
+
+  // Drives the marquee by nudging scrollLeft on a real horizontally-
+  // scrollable container (instead of a CSS transform), so touch devices
+  // get native swipe/drag for free while the autoplay keeps running.
+  // On narrow/mobile viewports the same px/s speed reads as sluggish
+  // (less of each card is visible at once), so it's sped up there.
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el || !canLoop) return undefined;
+
+    const prefersReducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReducedMotion) return undefined;
+
+    const mobileQuery =
+      typeof window !== "undefined" ? window.matchMedia("(max-width: 768px)") : null;
+    let isMobile = mobileQuery?.matches ?? false;
+    const handleMobileChange = (e) => {
+      isMobile = e.matches;
+    };
+    mobileQuery?.addEventListener?.("change", handleMobileChange);
+
+    let rafId;
+    let last = performance.now();
+
+    function step(now) {
+      const dt = (now - last) / 1000;
+      last = now;
+      if (!isPausedRef.current) {
+        const halfWidth = el.scrollWidth / 2;
+        const effectiveDuration = isMobile ? durationSeconds / 2.5 : durationSeconds;
+        const pxPerSecond = halfWidth / effectiveDuration;
+        el.scrollLeft += pxPerSecond * dt;
+        if (el.scrollLeft >= halfWidth) {
+          el.scrollLeft -= halfWidth;
+        }
+      }
+      rafId = requestAnimationFrame(step);
+    }
+
+    rafId = requestAnimationFrame(step);
+    return () => {
+      cancelAnimationFrame(rafId);
+      mobileQuery?.removeEventListener?.("change", handleMobileChange);
+    };
+  }, [canLoop, durationSeconds, active, filtered.length]);
+
+  function pauseMarquee() {
+    isPausedRef.current = true;
+    if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
+  }
+
+  function resumeMarquee(delay = 1200) {
+    if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
+    resumeTimeoutRef.current = setTimeout(() => {
+      isPausedRef.current = false;
+    }, delay);
+  }
+
+  useEffect(
+    () => () => {
+      if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (trackRef.current) trackRef.current.scrollLeft = 0;
+  }, [active]);
+
   return (
     <section
       id="shop"
       className="border-t border-black/10 bg-white px-[clamp(1.5rem,5vw,6rem)] py-[clamp(5rem,10vw,9rem)] transition-colors dark:border-white/10 dark:bg-black"
     >
       <style>{`
-        @keyframes shopMarquee {
-          from { transform: translateX(-50%); }
-          to { transform: translateX(0); }
-        }
         .shop-track {
-          animation: shopMarquee var(--marquee-duration, 40s) linear infinite;
-          will-change: transform;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
         }
-        .shop-track:hover {
-          animation-play-state: paused;
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .shop-track {
-            animation: none;
-          }
+        .shop-track::-webkit-scrollbar {
+          display: none;
         }
       `}</style>
 
@@ -527,8 +593,14 @@ export default function Shop() {
         {(loading || (!dataError && filtered.length > 0)) && (
           <div className="-mx-[clamp(1.5rem,5vw,6rem)] overflow-hidden px-[clamp(1.5rem,5vw,6rem)] pb-3">
             <div
-              className={`flex gap-4 ${canLoop ? "shop-track" : ""}`}
-              style={canLoop ? { "--marquee-duration": `${durationSeconds}s` } : undefined}
+              ref={trackRef}
+              className="shop-track flex touch-pan-x gap-4 overflow-x-auto"
+              style={{ WebkitOverflowScrolling: "touch" }}
+              onMouseEnter={pauseMarquee}
+              onMouseLeave={() => resumeMarquee(0)}
+              onTouchStart={pauseMarquee}
+              onTouchEnd={() => resumeMarquee(1500)}
+              onTouchCancel={() => resumeMarquee(1500)}
             >
               {loading
                 ? Array.from({ length: 4 }).map((_, i) => <ShopCardSkeleton key={i} />)
