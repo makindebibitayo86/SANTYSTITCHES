@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-import { API_URL, ADMIN_SESSION_KEY, ADMIN_PASSWORD, ADMIN_TOKEN } from "../config";
+import { API_URL, ADMIN_SESSION_KEY, ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_TOKEN } from "../config";
 import logo from "../assets/santy-stitches-logo-transparent.png";
 import AdminNavbar from "./AdminNavbar";
 
@@ -150,16 +150,17 @@ async function callApi(action, payload = {}) {
 /* ---------------------------------------------------------- */
 
 function LoginGate({ onSuccess }) {
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   function handleSubmit(e) {
     e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
       sessionStorage.setItem(ADMIN_SESSION_KEY, "1");
       onSuccess();
     } else {
-      setError("Incorrect password");
+      setError("Incorrect username or password");
     }
   }
 
@@ -182,11 +183,23 @@ function LoginGate({ onSuccess }) {
         </h1>
 
         <label className="mb-1.5 block text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
+          Username
+        </label>
+        <input
+          type="text"
+          autoFocus
+          autoCapitalize="off"
+          autoCorrect="off"
+          value={username}
+          onChange={(e) => { setUsername(e.target.value); setError(""); }}
+          className="mb-4 w-full border border-black/15 bg-transparent px-3 py-2.5 text-sm text-black outline-none transition-colors focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white"
+        />
+
+        <label className="mb-1.5 block text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
           Password
         </label>
         <input
           type="password"
-          autoFocus
           value={password}
           onChange={(e) => { setPassword(e.target.value); setError(""); }}
           className="mb-1.5 w-full border border-black/15 bg-transparent px-3 py-2.5 text-sm text-black outline-none transition-colors focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white"
@@ -196,7 +209,7 @@ function LoginGate({ onSuccess }) {
 
         <button
           type="submit"
-          disabled={!password}
+          disabled={!username || !password}
           className="w-full border border-black bg-black px-6 py-3 text-sm uppercase tracking-widest text-white transition-colors hover:bg-white hover:text-black disabled:opacity-50 dark:border-white dark:bg-white dark:text-black dark:hover:bg-black dark:hover:text-white"
         >
           Enter
@@ -987,6 +1000,13 @@ function CatalogueManager() {
 
 export default function AdminPage() {
   const [loggedIn, setLoggedIn] = useState(isAdminLoggedIn());
+
+  useEffect(() => {
+    const prevTitle = document.title;
+    document.title = "ADMIN - SANTY STITCHES";
+    return () => { document.title = prevTitle; };
+  }, []);
+
   if (!loggedIn) return <LoginGate onSuccess={() => setLoggedIn(true)} />;
   return <CatalogueManager />;
 }

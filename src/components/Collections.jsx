@@ -365,7 +365,7 @@ export default function Collections() {
             <h2 className="font-['Playfair_Display'] text-[clamp(2.2rem,5vw,3.5rem)] font-semibold leading-[1.05] text-black dark:text-white">
               New Drops.
               <br />
-              <span className="text-black/30 dark:text-white/30">Old Standards.</span>
+              <span className="text-black/30 dark:text-white/30">Classic Standards.</span>
             </h2>
           </div>
 

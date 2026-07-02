@@ -5,8 +5,9 @@ export const API_URL =
 
 export const ADMIN_SESSION_KEY = "santy_admin_key";
 
-// Password checked client-side in AdminPage's LoginGate.
-export const ADMIN_PASSWORD = "password";
+// Username/password checked client-side in AdminPage's LoginGate.
+export const ADMIN_USERNAME = "santystitches";
+export const ADMIN_PASSWORD = "alphawolf";
 
 // Sent as `token` on every admin* API call — the Apps Script side (code.gs)
 // must check this value and reject requests where it doesn't match.

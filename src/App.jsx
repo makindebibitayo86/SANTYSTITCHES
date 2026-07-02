@@ -8,6 +8,7 @@ import About from "./components/About";
 import ContactSection from "./components/ContactSection";
 import Footer from "./components/Footer";
 import AdminPage from "./components/AdminPage";
+import { CartProvider } from "./context/CartContext";
 
 function MainSite() {
   return (
@@ -25,12 +26,14 @@ function MainSite() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<MainSite />} />
-        <Route path="/admin" element={<AdminPage />} />
-      </Routes>
-    </BrowserRouter>
+    <CartProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<MainSite />} />
+          <Route path="/admin" element={<AdminPage />} />
+        </Routes>
+      </BrowserRouter>
+    </CartProvider>
   );
 }
 

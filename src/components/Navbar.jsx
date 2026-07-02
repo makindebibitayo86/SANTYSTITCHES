@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
-import { Menu, X, Sun, Moon } from "lucide-react";
+import { Menu, X, Sun, Moon, ShoppingBag } from "lucide-react";
 import logo from "../assets/santy-stitches-logo-transparent.png";
+import { useCart } from "../context/CartContext";
+import CartDrawer from "./CartDrawer";
 
 const NAV_LINKS = [
   { label: "Collections", href: "#collections" },
@@ -11,6 +13,7 @@ const NAV_LINKS = [
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const { cartCount, openCart } = useCart();
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem("theme");
     return saved ? saved === "dark" : true;
@@ -61,8 +64,22 @@ function Navbar() {
             ))}
           </div>
 
-          {/* Right side: theme toggle + mobile button */}
+          {/* Right side: cart + theme toggle + mobile button */}
           <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={openCart}
+              className="relative text-black dark:text-white"
+              aria-label="Open cart"
+            >
+              <ShoppingBag size={22} />
+              {cartCount > 0 && (
+                <span className="absolute -right-2 -top-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-black px-1 text-[0.6rem] font-medium leading-none text-white dark:bg-white dark:text-black">
+                  {cartCount > 99 ? "99+" : cartCount}
+                </span>
+              )}
+            </button>
+
             <button
               type="button"
               onClick={() => setIsDark((prev) => !prev)}
@@ -100,6 +117,8 @@ function Navbar() {
           ))}
         </div>
       )}
+
+      <CartDrawer />
     </nav>
   );
 }

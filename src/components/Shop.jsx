@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { API_URL } from "../config";
+import { useCart } from "../context/CartContext";
 
 // Tracks whether the viewport is "mobile" width, reacting to resize/rotate.
 function useIsMobileViewport() {
@@ -33,17 +34,17 @@ function formatPrice(price) {
 /* ---------------------------------------------------------- */
 
 function OrderModal({ item, onClose }) {
+  const { addToCart, openCart } = useCart();
   const [activeImg, setActiveImg] = useState(0);
-  const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [form, setForm] = useState({
-    name: "", phone: "", email: "", sleeve: "", size: "", height: "", age: "", note: "",
-  });
+  const [added, setAdded] = useState(false);
+  const [form, setForm] = useState({ sleeve: "", size: "", height: "", age: "", note: "" });
 
   useEffect(() => {
     if (!item) return;
     document.body.style.overflow = "hidden";
+    setAdded(false);
+    setActiveImg(0);
+    setForm({ sleeve: "", size: "", height: "", age: "", note: "" });
     return () => { document.body.style.overflow = ""; };
   }, [item]);
 
@@ -57,35 +58,23 @@ function OrderModal({ item, onClose }) {
     if (e.target === e.currentTarget) onClose();
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    const payload = {
-      action: "createOrder",
-      order: {
-        productId: item.id,
-        productName: item.name,
-        category: item.category,
-        price: item.price,
-        ...form,
-      },
+  const handleAddToCart = () => {
+    const details = {
+      sleeve: form.sleeve,
+      height: form.height,
+      age: form.age,
+      note: form.note,
     };
-    try {
-      const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error || "Something went wrong");
-      setSubmitted(true);
-    } catch (err) {
-      setError(err.message || "Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    addToCart(
+      { id: item.id, name: item.name, price: item.price, image: item.image },
+      form.size,
+      1,
+      details
+    );
+    setAdded(true);
+    openCart();
+    onClose();
   };
-
-  const whatsappText = encodeURIComponent(
-    `Hi, I just submitted an order interest for ${item.name} (${formatPrice(item.price)}). Following up here.`
-  );
 
   return (
     <AnimatePresence>
@@ -142,8 +131,8 @@ function OrderModal({ item, onClose }) {
             )}
           </div>
 
-          {/* Info + form */}
-          <div className="flex flex-col p-5 md:overflow-y-auto md:p-8">
+          {/* Info + fit form */}
+          <div className="flex h-full flex-col p-5 md:overflow-y-auto md:p-8">
             <span className="mb-1 block text-[0.65rem] uppercase tracking-[0.2em] text-black/40 dark:text-white/40">
               {item.category}
             </span>
@@ -161,196 +150,128 @@ function OrderModal({ item, onClose }) {
 
             {!item.inStock && (
               <p className="mb-4 border border-black/20 bg-black/5 px-3 py-2 text-xs uppercase tracking-widest text-black/50 dark:border-white/20 dark:bg-white/5 dark:text-white/50">
-                Currently unavailable — enquire for restock updates
+                Currently unavailable — check back for restock
               </p>
             )}
 
-            {submitted ? (
-              <div className="flex flex-1 flex-col items-center justify-center gap-3 py-8 text-center">
-                <span className="font-['Playfair_Display'] text-3xl text-black dark:text-white">✦</span>
-                <h4 className="font-['Playfair_Display'] text-xl text-black dark:text-white">
-                  We've got your details
-                </h4>
-                <p className="max-w-xs text-sm text-black/60 dark:text-white/60">
-                  Our team will reach out to confirm your <strong>{item.name}</strong> order shortly.
+            <div className="flex flex-col gap-4 font-['Work_Sans']">
+              {(has("sleeve") || has("size") || has("height") || has("age") || has("note")) && (
+                <p className="text-xs uppercase tracking-widest text-black/40 dark:text-white/40">
+                  Tailor your fit <span className="normal-case text-black/30 dark:text-white/30">(all optional)</span>
                 </p>
-                <a
-                  href={`https://wa.me/2347031990126?text=${whatsappText}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 border border-black px-5 py-2.5 text-sm uppercase tracking-widest text-black transition-colors hover:bg-black hover:text-white dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-black"
-                >
-                  Follow up on WhatsApp
-                </a>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="mt-1 text-xs uppercase tracking-widest text-black/40 hover:text-black dark:text-white/40 dark:hover:text-white"
-                >
-                  Close
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="flex flex-col gap-4 font-['Work_Sans']">
+              )}
+
+              {has("sleeve") && (
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
-                    Full name <span className="text-black/30 dark:text-white/30">*</span>
+                    Sleeve preference
+                  </label>
+                  <div className="flex gap-2">
+                    {["Short sleeve", "Long sleeve"].map((s) => (
+                      <button
+                        type="button"
+                        key={s}
+                        onClick={() => setForm({ ...form, sleeve: form.sleeve === s ? "" : s })}
+                        className={`border px-3 py-2 text-xs uppercase tracking-wide transition-colors ${
+                          form.sleeve === s
+                            ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
+                            : "border-black/15 text-black/60 hover:border-black/40 dark:border-white/15 dark:text-white/60 dark:hover:border-white/40"
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {has("size") && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
+                    Size
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {availableSizes.map((s) => (
+                      <button
+                        type="button"
+                        key={s}
+                        onClick={() => setForm({ ...form, size: form.size === s ? "" : s })}
+                        className={`h-9 w-9 border text-xs transition-colors ${
+                          form.size === s
+                            ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
+                            : "border-black/15 text-black/60 hover:border-black/40 dark:border-white/15 dark:text-white/60 dark:hover:border-white/40"
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {has("height") && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
+                    Height <span className="normal-case text-black/30 dark:text-white/30">(cm or ft)</span>
                   </label>
                   <input
                     type="text"
-                    required
-                    placeholder="Your name"
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder={`e.g. 175cm or 5'9"`}
+                    value={form.height}
+                    onChange={(e) => setForm({ ...form, height: e.target.value })}
                     className="border border-black/15 bg-transparent px-3 py-2.5 text-sm text-black outline-none transition-colors focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white"
                   />
                 </div>
+              )}
 
+              {has("age") && (
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
-                    Phone number <span className="text-black/30 dark:text-white/30">*</span>
+                    Age <span className="normal-case text-black/30 dark:text-white/30">(helps with fit)</span>
                   </label>
                   <input
-                    type="tel"
-                    required
-                    placeholder="+234 800 000 0000"
-                    value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    type="number"
+                    min="1"
+                    max="120"
+                    placeholder="e.g. 28"
+                    value={form.age}
+                    onChange={(e) => setForm({ ...form, age: e.target.value })}
                     className="border border-black/15 bg-transparent px-3 py-2.5 text-sm text-black outline-none transition-colors focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white"
                   />
                 </div>
+              )}
 
+              {has("note") && (
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
-                    Email <span className="text-black/30 dark:text-white/30">(optional)</span>
+                    Any requests <span className="normal-case text-black/30 dark:text-white/30">(optional)</span>
                   </label>
-                  <input
-                    type="email"
-                    placeholder="you@email.com"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  <textarea
+                    rows={2}
+                    placeholder="Custom print, colour preference, gift wrapping…"
+                    value={form.note}
+                    onChange={(e) => setForm({ ...form, note: e.target.value })}
                     className="border border-black/15 bg-transparent px-3 py-2.5 text-sm text-black outline-none transition-colors focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white"
                   />
                 </div>
+              )}
+            </div>
 
-                {(has("sleeve") || has("size") || has("height") || has("age") || has("note")) && (
-                  <p className="mt-1 text-xs uppercase tracking-widest text-black/40 dark:text-white/40">
-                    Tailor your fit <span className="normal-case text-black/30 dark:text-white/30">(all optional)</span>
-                  </p>
-                )}
-
-                {has("sleeve") && (
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
-                      Sleeve preference
-                    </label>
-                    <div className="flex gap-2">
-                      {["Short sleeve", "Long sleeve"].map((s) => (
-                        <button
-                          type="button"
-                          key={s}
-                          onClick={() => setForm({ ...form, sleeve: form.sleeve === s ? "" : s })}
-                          className={`border px-3 py-2 text-xs uppercase tracking-wide transition-colors ${
-                            form.sleeve === s
-                              ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
-                              : "border-black/15 text-black/60 hover:border-black/40 dark:border-white/15 dark:text-white/60 dark:hover:border-white/40"
-                          }`}
-                        >
-                          {s}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {has("size") && (
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
-                      Size
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {availableSizes.map((s) => (
-                        <button
-                          type="button"
-                          key={s}
-                          onClick={() => setForm({ ...form, size: form.size === s ? "" : s })}
-                          className={`h-9 w-9 border text-xs transition-colors ${
-                            form.size === s
-                              ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
-                              : "border-black/15 text-black/60 hover:border-black/40 dark:border-white/15 dark:text-white/60 dark:hover:border-white/40"
-                          }`}
-                        >
-                          {s}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {has("height") && (
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
-                      Height <span className="normal-case text-black/30 dark:text-white/30">(cm or ft)</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder={`e.g. 175cm or 5'9"`}
-                      value={form.height}
-                      onChange={(e) => setForm({ ...form, height: e.target.value })}
-                      className="border border-black/15 bg-transparent px-3 py-2.5 text-sm text-black outline-none transition-colors focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white"
-                    />
-                  </div>
-                )}
-
-                {has("age") && (
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
-                      Age <span className="normal-case text-black/30 dark:text-white/30">(helps with fit)</span>
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="120"
-                      placeholder="e.g. 28"
-                      value={form.age}
-                      onChange={(e) => setForm({ ...form, age: e.target.value })}
-                      className="border border-black/15 bg-transparent px-3 py-2.5 text-sm text-black outline-none transition-colors focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white"
-                    />
-                  </div>
-                )}
-
-                {has("note") && (
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
-                      Any requests <span className="normal-case text-black/30 dark:text-white/30">(optional)</span>
-                    </label>
-                    <textarea
-                      rows={2}
-                      placeholder="Custom print, colour preference, gift wrapping…"
-                      value={form.note}
-                      onChange={(e) => setForm({ ...form, note: e.target.value })}
-                      className="border border-black/15 bg-transparent px-3 py-2.5 text-sm text-black outline-none transition-colors focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white"
-                    />
-                  </div>
-                )}
-
-                {error && <p className="text-xs text-red-500">{error}</p>}
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="mt-2 border border-black bg-black px-6 py-3 text-sm uppercase tracking-widest text-white transition-colors hover:bg-white hover:text-black disabled:opacity-50 dark:border-white dark:bg-white dark:text-black dark:hover:bg-black dark:hover:text-white"
-                >
-                  {loading ? "Sending…" : "Submit Order Interest"}
-                </button>
-              </form>
-            )}
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              disabled={!item.inStock}
+              className="mt-auto flex items-center justify-center gap-2 border border-black bg-black px-6 py-3 text-sm uppercase tracking-widest text-white transition-colors hover:bg-white hover:text-black disabled:opacity-50 dark:border-white dark:bg-white dark:text-black dark:hover:bg-black dark:hover:text-white"
+            >
+              {added ? "Added ✓" : "Add to Cart"}
+            </button>
           </div>
         </motion.div>
       </motion.div>
     </AnimatePresence>
   );
 }
+
 
 /* ---------------------------------------------------------- */
 /* Product card                                                */
@@ -486,6 +407,7 @@ export default function Shop() {
 
     let rafId;
     let last = performance.now();
+    el.scrollLeft = el.scrollWidth / 2;
 
     function step(now) {
       const dt = (now - last) / 1000;
@@ -493,9 +415,9 @@ export default function Shop() {
       if (!isPausedRef.current) {
         const halfWidth = el.scrollWidth / 2;
         const pxPerSecond = halfWidth / durationSeconds;
-        el.scrollLeft += pxPerSecond * dt;
-        if (el.scrollLeft >= halfWidth) {
-          el.scrollLeft -= halfWidth;
+        el.scrollLeft -= pxPerSecond * dt;
+        if (el.scrollLeft <= 0) {
+          el.scrollLeft += halfWidth;
         }
       }
       rafId = requestAnimationFrame(step);
@@ -525,8 +447,10 @@ export default function Shop() {
   );
 
   useEffect(() => {
-    if (trackRef.current) trackRef.current.scrollLeft = 0;
-  }, [active]);
+    const el = trackRef.current;
+    if (!el) return;
+    el.scrollLeft = canLoop ? el.scrollWidth / 2 : 0;
+  }, [active, canLoop]);
 
   return (
     <section

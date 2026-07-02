@@ -28,13 +28,23 @@ const FOOTER_LINKS = {
 const SOCIALS = [
   {
     label: "Instagram",
-    href: "https://instagram.com/santystitches",
+    href: "https://instagram.com/santystitches_",
     external: true,
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
         <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
         <path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z" />
         <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+      </svg>
+    ),
+  },
+  {
+    label: "TikTok",
+    href: "https://tiktok.com/@santystitches_",
+    external: true,
+    icon: (
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M16.6 5.82c-.9-.98-1.4-2.26-1.4-3.58h-3.28v13.94c0 1.6-1.3 2.9-2.9 2.9a2.9 2.9 0 01-2.9-2.9 2.9 2.9 0 012.9-2.9c.3 0 .59.05.86.13V9.98a6.18 6.18 0 00-.86-.06A6.22 6.22 0 003 16.14a6.22 6.22 0 006.22 6.22 6.22 6.22 0 006.22-6.22V9.01a9.14 9.14 0 005.34 1.71V7.44a5.64 5.64 0 01-4.18-1.62z" />
       </svg>
     ),
   },
@@ -46,38 +56,6 @@ const SOCIALS = [
       <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
         <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
         <path d="M12 0C5.373 0 0 5.373 0 12c0 2.113.548 4.1 1.508 5.83L0 24l6.335-1.647A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.823 9.823 0 01-5.006-1.366l-.36-.214-3.73.97.997-3.63-.235-.374A9.812 9.812 0 012.182 12C2.182 6.58 6.58 2.182 12 2.182S21.818 6.58 21.818 12 17.42 21.818 12 21.818z" />
-      </svg>
-    ),
-  },
-  {
-    label: "Snapchat",
-    href: "https://snapchat.com/add/santyxwolf",
-    external: true,
-    icon: (
-      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <path d="M12.06 2c2.99 0 5.51 2.2 5.83 5.13.08.7.06 1.77.04 2.65l-.01.34c.02.04.18.13.51.16.42.05.92-.1 1.36-.27a.6.6 0 01.55.05c.18.12.28.31.27.51-.04.61-.69 1.07-1.96 1.4-.07.15-.05.51.07.92.16.08.49.16.96.16.36 0 .68.21.79.55.1.31-.01.65-.27.86-.39.31-1.34.69-2.78.9-.06.18-.16.6-.24.95-.1.45-.51.74-1 .69-.27-.03-.65-.06-1.07-.06-.61 0-1.07.13-1.6.46-.7.43-1.49.93-2.45.93s-1.75-.5-2.45-.93c-.53-.33-.99-.46-1.6-.46-.42 0-.8.03-1.07.06-.49.05-.9-.24-1-.69-.08-.35-.18-.77-.24-.95-1.44-.21-2.39-.59-2.78-.9-.26-.21-.37-.55-.27-.86.11-.34.43-.55.79-.55.47 0 .8-.08.96-.16.12-.41.14-.77.07-.92-1.27-.33-1.92-.79-1.96-1.4-.01-.2.09-.39.27-.51a.6.6 0 01.55-.05c.44.17.94.32 1.36.27.33-.03.49-.12.51-.16l-.01-.34c-.02-.88-.04-1.95.04-2.65C6.55 4.2 9.07 2 12.06 2z" />
-      </svg>
-    ),
-  },
-  {
-    label: "X",
-    href: "https://x.com/santystitches",
-    external: true,
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-        <line x1="4.5" y1="4.5" x2="19.5" y2="19.5" />
-        <line x1="19.5" y1="4.5" x2="4.5" y2="19.5" />
-      </svg>
-    ),
-  },
-  {
-    label: "YouTube",
-    href: "https://youtube.com/@santyxwolf",
-    external: true,
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-        <rect x="2" y="5.5" width="20" height="13" rx="4" ry="4" />
-        <polygon points="10,9.5 16,12 10,14.5" fill="currentColor" stroke="none" />
       </svg>
     ),
   },
@@ -300,11 +278,11 @@ export default function Footer() {
             </div>
 
             <p className="max-w-full md:max-w-[380px] text-[0.95rem] font-light leading-[1.8] text-black/70 dark:text-white/70">
-              We don't just take your measurements
+              Style & Convenience;
               <br />
-              We understand the assignment
+              More than mere Outfits,
               <br />
-              We deliver on it, every single time.
+              Stitch by Stitch.
             </p>
 
             <div className="mt-1 flex gap-[10px]">
