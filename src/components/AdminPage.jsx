@@ -10,7 +10,7 @@ import AdminNavbar from "./AdminNavbar";
 /* ---------------------------------------------------------- */
 
 // Must match CATEGORIES in Shop.jsx exactly, case-sensitive (see Code.gs header comment).
-const CATEGORIES = ["Casual", "Corporate", "Streetwear", "Athleisure", "Accessories"];
+const CATEGORIES = ["Casual", "Corporate", "Streetwear", "Athleisure", "Caftan", "Accessories"];
 // ⚠️ BACKEND DEPENDENCY: as of the last look at Code.gs, doPost coerces every save down to
 // only "new" or "others" — anything else gets silently rewritten. Until that coercion logic
 // is updated to accept the values below, picking anything but "new"/"others" here WILL cause
@@ -379,8 +379,15 @@ const inputClass =
 // Native <option> elements ignore bg-transparent — most browsers render the open
 // dropdown panel with their own default (light) styling, so dark:text-white becomes
 // invisible white-on-white. `color-scheme` tells the browser to draw the select's
-// native chrome (including the option list) in dark mode instead.
+// native chrome (including the option list) in dark mode instead — but on some
+// browser/OS combos the popup listbox only honors color-scheme set at the document
+// (<html>) level, not on the individual <select>, so this alone isn't reliable.
 const selectClass = `${inputClass} dark:[color-scheme:dark]`;
+// Belt-and-suspenders fallback: explicit (non-transparent) bg/text classes set
+// directly on <option>, since browsers generally DO honor a solid background-color
+// and color on options even when they ignore everything else about their styling.
+// Apply this className to every <option> inside a `selectClass` <select>.
+const optionClass = "bg-white text-black dark:bg-black dark:text-white";
 
 // Shows the actual image (not a URL string), with an upload icon overlaid on it to
 // replace the picture. Picking a file compresses it client-side and hands back a
@@ -533,12 +540,12 @@ function ProductForm({ product, onCancel, onSave, saving }) {
 
               <Field label="Category">
                 <select className={selectClass} value={form.category} onChange={(e) => set("category", e.target.value)}>
-                  {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  {CATEGORIES.map((c) => <option key={c} value={c} className={optionClass}>{c}</option>)}
                 </select>
               </Field>
               <Field label="Listing" hint="which tab it shows in">
                 <select className={selectClass} value={form.tag} onChange={(e) => set("tag", e.target.value)}>
-                  {TAG_OPTIONS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  {TAG_OPTIONS.map((t) => <option key={t.value} value={t.value} className={optionClass}>{t.label}</option>)}
                 </select>
               </Field>
 
@@ -794,6 +801,8 @@ function CatalogueManager() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All"); // All / Visible / Hidden
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
   const isMobile = useIsMobile();
 
   const load = useCallback(async () => {
@@ -820,6 +829,23 @@ function CatalogueManager() {
       return true;
     });
   }, [products, categoryFilter, statusFilter, search]);
+
+  // Any change to what's being filtered should snap back to page 1 — otherwise
+  // e.g. narrowing a search while sitting on page 4 can strand the view on a
+  // page that no longer has any rows.
+  useEffect(() => { setPage(1); }, [search, categoryFilter, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  // Clamp if the current page is now out of range (e.g. after a delete shrinks
+  // the list, or products reload with fewer results than before).
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const paginated = useMemo(
+    () => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filtered, page]
+  );
 
   async function handleSave(product) {
     setSaving(true);
@@ -923,13 +949,13 @@ function CatalogueManager() {
             className="min-w-[180px] flex-1 border border-black/15 bg-transparent px-3 py-2 text-sm text-black outline-none focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white"
           />
           <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="border border-black/15 bg-transparent px-3 py-2 text-sm text-black outline-none focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white dark:[color-scheme:dark]">
-            <option value="All">All categories</option>
-            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            <option value="All" className={optionClass}>All categories</option>
+            {CATEGORIES.map((c) => <option key={c} value={c} className={optionClass}>{c}</option>)}
           </select>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="border border-black/15 bg-transparent px-3 py-2 text-sm text-black outline-none focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white dark:[color-scheme:dark]">
-            <option value="All">All statuses</option>
-            <option value="Visible">Visible only</option>
-            <option value="Hidden">Hidden only</option>
+            <option value="All" className={optionClass}>All statuses</option>
+            <option value="Visible" className={optionClass}>Visible only</option>
+            <option value="Hidden" className={optionClass}>Hidden only</option>
           </select>
         </div>
 
@@ -950,7 +976,7 @@ function CatalogueManager() {
           </div>
         ) : isMobile ? (
           <div className="border border-black/10 dark:border-white/10">
-            {filtered.map((p) => (
+            {paginated.map((p) => (
               <ProductRow key={p.id} product={p} isMobile onEdit={setEditing} onToggle={handleToggle} onDelete={setDeleteTarget} busy={busyId === p.id} />
             ))}
           </div>
@@ -967,11 +993,41 @@ function CatalogueManager() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((p) => (
+                {paginated.map((p) => (
                   <ProductRow key={p.id} product={p} isMobile={false} onEdit={setEditing} onToggle={handleToggle} onDelete={setDeleteTarget} busy={busyId === p.id} />
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {!loading && filtered.length > 0 && (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs text-black/40 dark:text-white/40">
+              Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="border border-black/15 px-3 py-1.5 text-xs uppercase tracking-widest text-black/70 transition-colors hover:border-black hover:text-black disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-black/15 dark:border-white/15 dark:text-white/70 dark:hover:border-white dark:hover:text-white"
+              >
+                Prev
+              </button>
+              <span className="text-xs text-black/50 dark:text-white/50">
+                Page {page} of {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                className="border border-black/15 px-3 py-1.5 text-xs uppercase tracking-widest text-black/70 transition-colors hover:border-black hover:text-black disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-black/15 dark:border-white/15 dark:text-white/70 dark:hover:border-white dark:hover:text-white"
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
 

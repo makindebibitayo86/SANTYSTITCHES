@@ -53,7 +53,7 @@ function Hero() {
             </h1>
             <p className="font-['Work_Sans'] mt-6 max-w-sm text-black/60 dark:text-white/60">
               Every measurement exact. Every seam intentional. This is
-              menswear with nothing left to chance.
+              menswear with nothing left to chance stitch by stitch.
             </p>
             <div className="mt-10">
               <a

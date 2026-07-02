@@ -205,7 +205,7 @@ function FooterModal({ id, onClose }) {
           transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
         >
           <div className="sticky top-0 z-[1] flex items-center justify-between px-8 pt-6 pb-2 bg-white dark:bg-black">
-            <BrandMark size="h-7 w-auto" />
+            <BrandMark size="h-30 w-auto" />
             <button
               onClick={onClose}
               aria-label="Close"

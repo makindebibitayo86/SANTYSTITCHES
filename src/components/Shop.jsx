@@ -21,7 +21,7 @@ function useIsMobileViewport() {
   return isMobile;
 }
 
-const CATEGORIES = ["All", "Casual", "Corporate", "Streetwear", "Athleisure", "Accessories"];
+const CATEGORIES = ["All", "Casual", "Corporate", "Streetwear", "Athleisure", "Caftan", "Accessories"];
 const DEFAULT_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 
 function formatPrice(price) {
