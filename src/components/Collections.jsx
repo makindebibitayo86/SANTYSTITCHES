@@ -229,7 +229,7 @@ export default function Collections() {
   const [dataError, setDataError] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const trackRef = useRef(null);
+  const [trackEl, setTrackEl] = useState(null);
   const isPausedRef = useRef(false);
   const resumeTimeoutRef = useRef(null);
   const isMobileViewport = useIsMobileViewport();
@@ -279,7 +279,7 @@ export default function Collections() {
   // get native swipe/drag for free. Autoplay only runs on desktop —
   // on mobile it's purely swipe-driven (no auto-scroll, no looping).
   useEffect(() => {
-    const el = trackRef.current;
+    const el = trackEl;
     if (!el || !canLoop) return undefined;
 
     const prefersReducedMotion =
@@ -306,7 +306,7 @@ export default function Collections() {
 
     rafId = requestAnimationFrame(step);
     return () => cancelAnimationFrame(rafId);
-  }, [canLoop, durationSeconds, tab, filtered.length]);
+  }, [trackEl, canLoop, durationSeconds, tab, filtered.length]);
 
   function pauseMarquee() {
     isPausedRef.current = true;
@@ -435,7 +435,7 @@ export default function Collections() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={tab}
-                ref={trackRef}
+                ref={setTrackEl}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}

@@ -1,141 +1,90 @@
-import { useState, useEffect } from "react";
-import { Menu, X, Sun, Moon, LogOut } from "lucide-react";
+import { useState } from "react";
 import logo from "../assets/santy-stitches-logo-transparent.png";
 
-function AdminNavbar({ navItems, activeKey, onNavigate, onLogout }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isDark, setIsDark] = useState(() => {
-    const saved = localStorage.getItem("theme");
-    return saved ? saved === "dark" : true;
-  });
+const logoutIcon = (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+  </svg>
+);
 
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", isDark);
-    localStorage.setItem("theme", isDark ? "dark" : "light");
-  }, [isDark]);
+const sunIcon = (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+  </svg>
+);
 
-  function handleNavClick(key) {
-    onNavigate?.(key);
-    setIsOpen(false);
+const moonIcon = (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+  </svg>
+);
+
+// The `dark` class on <html> is already set before this app mounts (site-wide
+// theme init runs first), so this just reads + flips that existing class —
+// no separate context/provider needed for the toggle to work from in here.
+function useAdminTheme() {
+  const [isDark, setIsDark] = useState(
+    () => typeof document !== "undefined" && document.documentElement.classList.contains("dark")
+  );
+
+  function toggle() {
+    const next = !isDark;
+    document.documentElement.classList.toggle("dark", next);
+    localStorage.setItem("theme", next ? "dark" : "light");
+    setIsDark(next);
   }
 
-  function handleLogoutClick() {
-    setIsOpen(false);
-    onLogout?.();
-  }
+  return [isDark, toggle];
+}
+
+function AdminNavbar({ onLogout }) {
+  const [isDark, toggleTheme] = useAdminTheme();
 
   return (
-    <nav className="sticky top-0 z-50 backdrop-blur-md bg-white/30 dark:bg-black/30 border-b border-black/10 dark:border-white/10 transition-colors">
-      <div className="px-6 md:px-10">
-        <div className="flex items-center justify-between h-20">
-          {/* Logo */}
-          <a href="/" className="flex items-center gap-3 shrink-0" title="Back to site">
-            <img
-              src={logo}
-              alt="Santy Stitches"
-              className="h-18 w-auto dark:invert transition-all"
-            />
-            <span className="hidden sm:block text-xs font-semibold uppercase tracking-[0.3em] text-black/70 dark:text-white/70">
-              Admin
-            </span>
-          </a>
-
-          {/* Desktop links */}
-          <div className="hidden md:flex items-center gap-10">
-            {navItems.map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                onClick={() => handleNavClick(item.key)}
-                aria-current={item.key === activeKey ? "page" : undefined}
-                className={`text-sm tracking-widest uppercase transition-colors ${
-                  item.key === activeKey
-                    ? "text-black dark:text-white"
-                    : "text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white"
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Right side: view site + logout + theme toggle + mobile button */}
-          <div className="flex items-center gap-4">
-            <a
-              href="/"
-              className="hidden md:block text-sm tracking-widest uppercase text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors"
-            >
-              View site
-            </a>
-
-            <button
-              type="button"
-              onClick={handleLogoutClick}
-              className="hidden md:flex items-center gap-2 text-sm tracking-widest uppercase text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors"
-            >
-              <LogOut size={16} />
-              Log out
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setIsDark((prev) => !prev)}
-              className="text-black dark:text-white"
-              aria-label="Toggle theme"
-            >
-              {isDark ? <Sun size={22} /> : <Moon size={22} />}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setIsOpen((prev) => !prev)}
-              className="md:hidden text-black dark:text-white"
-              aria-label="Toggle menu"
-              aria-expanded={isOpen}
-            >
-              {isOpen ? <X size={26} /> : <Menu size={26} />}
-            </button>
-          </div>
-        </div>
+    <header className="sticky top-0 z-20 flex h-20 shrink-0 items-center justify-between border-b border-black/10 bg-white px-4 dark:border-white/10 dark:bg-black md:px-6">
+      <div className="flex items-center gap-5">
+        {/* On mobile the logo itself doubles as the "back to site" link, so
+            View Site (below) is desktop-only there. md:pointer-events-none
+            keeps the logo inert on desktop where the button still handles it. */}
+        <a href="/" className="contents md:pointer-events-none md:cursor-default" aria-label="Back to Santy Stitches site">
+          <img src={logo} alt="Santy Stitches" className="h-14 w-auto transition-all dark:invert" />
+        </a>
+        <span className="text-sm uppercase tracking-[0.3em] text-black/40 dark:text-white/40">
+          Admin
+        </span>
       </div>
 
-      {/* Mobile menu */}
-      {isOpen && (
-        <div className="md:hidden border-t border-black/10 dark:border-white/10 backdrop-blur-md bg-white/30 dark:bg-black/30 px-6 py-6 flex flex-col gap-6 transition-colors">
-          {navItems.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => handleNavClick(item.key)}
-              aria-current={item.key === activeKey ? "page" : undefined}
-              className={`text-left text-sm tracking-widest uppercase transition-colors ${
-                item.key === activeKey
-                  ? "text-black dark:text-white"
-                  : "text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white"
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
-
-          <a
-            href="/"
-            className="text-left text-sm tracking-widest uppercase text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors"
-          >
-            View site
-          </a>
-
-          <button
-            type="button"
-            onClick={handleLogoutClick}
-            className="flex items-center gap-2 text-left text-sm tracking-widest uppercase text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors"
-          >
-            <LogOut size={16} />
-            Log out
-          </button>
-        </div>
-      )}
-    </nav>
+      <div className="flex items-center gap-5">
+        <a
+          href="/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hidden text-xs uppercase tracking-widest text-black/60 transition-colors hover:text-black dark:text-white/60 dark:hover:text-white md:inline-block"
+        >
+          View site
+        </a>
+        <button
+          type="button"
+          onClick={onLogout}
+          title="Log out"
+          aria-label="Log out"
+          className="flex items-center gap-1.5 text-xs uppercase tracking-widest text-red-500/80 transition-colors hover:text-red-500 dark:text-red-400/80 dark:hover:text-red-400"
+        >
+          <span className="shrink-0">{logoutIcon}</span>
+          Log out
+        </button>
+        <button
+          type="button"
+          onClick={toggleTheme}
+          title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          aria-label="Toggle theme"
+          className="flex items-center justify-center text-black/60 transition-colors hover:text-black dark:text-white/60 dark:hover:text-white"
+        >
+          {isDark ? sunIcon : moonIcon}
+        </button>
+      </div>
+    </header>
   );
 }
 

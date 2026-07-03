@@ -4,6 +4,11 @@ import { AnimatePresence, motion } from "framer-motion";
 import { API_URL, ADMIN_SESSION_KEY, ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_TOKEN } from "../config";
 import logo from "../assets/santy-stitches-logo-transparent.png";
 import AdminNavbar from "./AdminNavbar";
+import AdminSidebar from "./AdminSidebar";
+import AdminFooter from "./AdminFooter";
+import AdminHeroImages from "./AdminHeroImages";
+import AdminAbout from "./AdminAbout";
+import OrdersManager from "./OrdersManager";
 
 /* ---------------------------------------------------------- */
 /* Constants — mirrors the shape used in Collections & Shop    */
@@ -26,11 +31,6 @@ const TAG_OPTIONS = [
   { value: "others", label: "others" },
 ];
 const ALL_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
-
-// Admin navbar sections. Add new entries here as more admin sections ship —
-// each just needs a unique key, a label, and an icon from the Icon map below.
-// (Empty for now — "Product Catalogue" lives in the page's top actions bar instead.)
-const NAV_ITEMS = [];
 
 // Mirrors the Products sheet headers 1:1 (id / catalogNo / name / tag / category / meta /
 // price / description / image / gallery / sizes / inStock / featured / sortOrder), plus
@@ -340,7 +340,36 @@ const Icon = {
       <path d="M21 15l-5-5L5 21" />
     </svg>
   ),
+  receipt: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 2h16v20l-3-2-3 2-3-2-3 2-3-2-1 2z" />
+      <path d="M8 7h8M8 11h8M8 15h5" />
+    </svg>
+  ),
+  bag: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 2l-3 6v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8l-3-6z" />
+      <path d="M3 8h18" />
+      <path d="M16 8a4 4 0 0 1-8 0" />
+    </svg>
+  ),
+  user: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  ),
 };
+
+// Sidebar sections — icons only on mobile, icon + label on desktop.
+// Keys are used both as AdminShell's activeKey and as the section state
+// AdminPage switches on, so keep them in sync if you add more.
+const NAV_ITEMS = [
+  { key: "hero", label: "Hero", icon: Icon.image },
+  { key: "about", label: "About", icon: Icon.user },
+  { key: "products", label: "Products", icon: Icon.grid, mobileIcon: Icon.bag },
+  { key: "orders", label: "Orders", icon: Icon.receipt },
+];
 
 /* ---------------------------------------------------------- */
 /* Product form (add / edit modal)                             */
@@ -765,22 +794,34 @@ function ConfirmDeleteModal({ product, onCancel, onConfirm, deleting }) {
 /* Admin navbar — sticky glass bar, same language as site Navbar */
 /* ---------------------------------------------------------- */
 
-function AdminShell({ title, activeKey, actions, onLogout, children }) {
+function AdminShell({ title, activeKey, actions, onNavigate, onLogout, children }) {
   return (
-    <div className="min-h-screen bg-white transition-colors dark:bg-black">
-      <AdminNavbar navItems={NAV_ITEMS} activeKey={activeKey} onLogout={onLogout} />
+    <div className="min-h-screen overflow-x-hidden bg-white transition-colors dark:bg-black">
+      <AdminNavbar onLogout={onLogout} />
 
-      {/* Actions bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/10 px-6 py-4 dark:border-white/10 md:px-10">
-        {title && (
-          <h1 className="font-['Playfair_Display'] text-lg text-black dark:text-white">
-            {title}
-          </h1>
-        )}
-        <div className="flex flex-wrap gap-2">{actions}</div>
+      <div className="flex">
+        <AdminSidebar navItems={NAV_ITEMS} activeKey={activeKey} onNavigate={onNavigate} />
+
+        <div className="flex min-h-[calc(100vh-5rem)] min-w-0 flex-1 flex-col">
+          {/* Actions bar — skipped entirely when a section supplies neither a
+              title nor actions, so pages like Hero (which has its own inline
+              header) don't get an empty bordered strip above their content. */}
+          {(title || actions) && (
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/10 px-6 py-4 dark:border-white/10 md:px-10">
+              {title && (
+                <h1 className="font-['Playfair_Display'] text-lg text-black dark:text-white">
+                  {title}
+                </h1>
+              )}
+              <div className="flex flex-wrap gap-2">{actions}</div>
+            </div>
+          )}
+
+          <main className="mx-auto w-full max-w-[1300px] flex-1 px-6 py-8 md:px-10">{children}</main>
+
+          <AdminFooter />
+        </div>
       </div>
-
-      <main className="mx-auto max-w-[1300px] px-6 py-8 md:px-10">{children}</main>
     </div>
   );
 }
@@ -789,7 +830,7 @@ function AdminShell({ title, activeKey, actions, onLogout, children }) {
 /* Main catalogue manager                                       */
 /* ---------------------------------------------------------- */
 
-function CatalogueManager() {
+function CatalogueManager({ onNavigate }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -897,7 +938,8 @@ function CatalogueManager() {
   return (
     <AdminShell
       title="Product Catalogue"
-      activeKey="catalogue"
+      activeKey="products"
+      onNavigate={onNavigate}
       onLogout={() => { sessionStorage.removeItem(ADMIN_SESSION_KEY); window.location.reload(); }}
       actions={
         <>
@@ -1056,6 +1098,8 @@ function CatalogueManager() {
 
 export default function AdminPage() {
   const [loggedIn, setLoggedIn] = useState(isAdminLoggedIn());
+  // Which sidebar section is active. Hero is the default landing view.
+  const [section, setSection] = useState("hero");
 
   useEffect(() => {
     const prevTitle = document.title;
@@ -1064,5 +1108,35 @@ export default function AdminPage() {
   }, []);
 
   if (!loggedIn) return <LoginGate onSuccess={() => setLoggedIn(true)} />;
-  return <CatalogueManager />;
+
+  const handleLogout = () => {
+    sessionStorage.removeItem(ADMIN_SESSION_KEY);
+    window.location.reload();
+  };
+
+  if (section === "hero") {
+    return (
+      <AdminShell activeKey="hero" onNavigate={setSection} onLogout={handleLogout}>
+        <AdminHeroImages />
+      </AdminShell>
+    );
+  }
+
+  if (section === "about") {
+    return (
+      <AdminShell activeKey="about" onNavigate={setSection} onLogout={handleLogout}>
+        <AdminAbout />
+      </AdminShell>
+    );
+  }
+
+  if (section === "orders") {
+    return (
+      <AdminShell title="Orders" activeKey="orders" onNavigate={setSection} onLogout={handleLogout}>
+        <OrdersManager />
+      </AdminShell>
+    );
+  }
+
+  return <CatalogueManager onNavigate={setSection} />;
 }
