@@ -8,6 +8,7 @@ import AdminSidebar from "./AdminSidebar";
 import AdminFooter from "./AdminFooter";
 import AdminHeroImages from "./AdminHeroImages";
 import AdminAbout from "./AdminAbout";
+import AdminMarquee from "./AdminMarquee";
 import OrdersManager from "./OrdersManager";
 
 /* ---------------------------------------------------------- */
@@ -359,6 +360,12 @@ const Icon = {
       <circle cx="12" cy="7" r="4" />
     </svg>
   ),
+  marquee: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <path d="M6 10h5M6 14h9" />
+    </svg>
+  ),
 };
 
 // Sidebar sections — icons only on mobile, icon + label on desktop.
@@ -367,6 +374,7 @@ const Icon = {
 const NAV_ITEMS = [
   { key: "hero", label: "Hero", icon: Icon.image },
   { key: "about", label: "About", icon: Icon.user },
+  { key: "marquee", label: "Marquee", icon: Icon.marquee },
   { key: "products", label: "Products", icon: Icon.grid, mobileIcon: Icon.bag },
   { key: "orders", label: "Orders", icon: Icon.receipt },
 ];
@@ -1126,6 +1134,14 @@ export default function AdminPage() {
     return (
       <AdminShell activeKey="about" onNavigate={setSection} onLogout={handleLogout}>
         <AdminAbout />
+      </AdminShell>
+    );
+  }
+
+  if (section === "marquee") {
+    return (
+      <AdminShell activeKey="marquee" onNavigate={setSection} onLogout={handleLogout}>
+        <AdminMarquee />
       </AdminShell>
     );
   }
