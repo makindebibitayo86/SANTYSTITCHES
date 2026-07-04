@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import HeroMarquee from "./HeroMarquee";
 
+import { API_URL } from "../config";
+
 // Cap on how many images from the sheet will be shown, in case the sheet
 // grows larger than intended. Set to null for no cap.
 const MAX_SLIDES = null;
 
 const SLIDE_DURATION = 5000;
-const APPS_SCRIPT_URL = import.meta.env.VITE_APPS_SCRIPT_URL;
 
 function Hero() {
   const [slides, setSlides] = useState([]);
@@ -20,14 +21,9 @@ function Hero() {
     let cancelled = false;
 
     async function loadHeroImages() {
-      if (!APPS_SCRIPT_URL) {
-        if (!cancelled) setStatus("error");
-        return;
-      }
-
       try {
         const res = await fetch(
-          `${APPS_SCRIPT_URL}?action=getHeroImages`
+          `${API_URL}?action=getHeroImages`
         );
         if (!res.ok) throw new Error(`Request failed: ${res.status}`);
 
@@ -80,7 +76,9 @@ function Hero() {
               Bespoke Menswear
             </p>
             <h1 className="font-['Playfair_Display'] text-5xl sm:text-6xl lg:text-7xl font-semibold leading-[1.05] text-black dark:text-white">
-              Style & Convenience
+              <span className="whitespace-nowrap">Style &amp;</span>
+              <br />
+              Convenience
               <br />
               <span className="text-black/30 dark:text-white/30">More than mere Outfits.</span>
             </h1>

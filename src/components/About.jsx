@@ -1,5 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
+import { API_URL } from "../config";
+
 const PILLARS = [
   {
     title: "Made To Order",
@@ -15,8 +17,6 @@ const PILLARS = [
   },
 ];
 
-const APPS_SCRIPT_URL = import.meta.env.VITE_APPS_SCRIPT_URL;
-
 // Owner photo lives in the "About" tab of the sheet (uploaded from
 // AdminAbout in the admin panel). No fallback placeholder — while loading
 // (or if nothing's been uploaded yet), the caller shows a skeleton instead.
@@ -27,7 +27,7 @@ function useOwnerImage() {
   useEffect(() => {
     let cancelled = false;
 
-    fetch(`${APPS_SCRIPT_URL}?action=getAboutImage`)
+    fetch(`${API_URL}?action=getAboutImage`)
       .then((res) => res.json())
       .then((data) => {
         if (!cancelled) setImageUrl(data?.image?.imageUrl || null);

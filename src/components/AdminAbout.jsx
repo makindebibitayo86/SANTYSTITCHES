@@ -1,9 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 
-const APPS_SCRIPT_URL = import.meta.env.VITE_APPS_SCRIPT_URL;
-// Same key hero/product writes already send as apiKey — Code.gs gates
-// uploadAboutImage behind this too.
-const API_KEY = import.meta.env.VITE_APPS_SCRIPT_API_KEY;
+import { API_URL, ADMIN_TOKEN } from "../config";
 
 // About.jsx displays this at a 4:5 portrait ratio, same as the hero
 // carousel's display resolution class — so the same quality/size budget
@@ -58,9 +55,9 @@ async function compressImage(file) {
 // Plain-text body on purpose — no explicit Content-Type header, avoids a
 // CORS preflight round-trip against the Apps Script backend.
 async function postAction(payload) {
-  const res = await fetch(APPS_SCRIPT_URL, {
+  const res = await fetch(API_URL, {
     method: "POST",
-    body: JSON.stringify({ apiKey: API_KEY, ...payload }),
+    body: JSON.stringify({ apiKey: ADMIN_TOKEN, ...payload }),
   });
   if (!res.ok) throw new Error(`Request failed: ${res.status}`);
   return res.json();
@@ -76,7 +73,7 @@ function AdminAbout() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${APPS_SCRIPT_URL}?action=getAboutImage`);
+      const res = await fetch(`${API_URL}?action=getAboutImage`);
       const data = await res.json();
       setImage(data.image || null);
     } catch (err) {

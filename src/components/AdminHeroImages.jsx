@@ -1,9 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 
-const APPS_SCRIPT_URL = import.meta.env.VITE_APPS_SCRIPT_URL;
-// Same key your product create/update/delete calls already send as apiKey —
-// Code.gs gates all hero write actions behind this too.
-const API_KEY = import.meta.env.VITE_APPS_SCRIPT_API_KEY;
+import { API_URL, ADMIN_TOKEN } from "../config";
 
 // Code.gs now chunks each image's base64 across up to 10 Sheet cells
 // (imageData..imageData10, ~49,000 chars each) instead of squeezing
@@ -75,9 +72,9 @@ async function compressImage(file) {
 // Plain-text body on purpose — no explicit Content-Type header, avoids the
 // CORS preflight issue hit on DON ELCLASICO's Apps Script backend.
 async function postAction(payload) {
-  const res = await fetch(APPS_SCRIPT_URL, {
+  const res = await fetch(API_URL, {
     method: "POST",
-    body: JSON.stringify({ apiKey: API_KEY, ...payload }),
+    body: JSON.stringify({ apiKey: ADMIN_TOKEN, ...payload }),
   });
   if (!res.ok) throw new Error(`Request failed: ${res.status}`);
   return res.json();
@@ -93,7 +90,7 @@ function AdminHeroImages() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${APPS_SCRIPT_URL}?action=getHeroImages`);
+      const res = await fetch(`${API_URL}?action=getHeroImages`);
       const data = await res.json();
       const sorted = (data.images || []).sort((a, b) => a.order - b.order);
       setImages(sorted);
