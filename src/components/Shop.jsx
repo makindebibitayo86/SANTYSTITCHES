@@ -139,14 +139,14 @@ function OrderModal({ item, onClose }) {
             <h3 className="mb-2 font-['Playfair_Display'] text-2xl font-semibold text-black dark:text-white">
               {item.name}
             </h3>
+            <p className="mb-4 font-['Playfair_Display'] text-xl text-black dark:text-white">
+              {formatPrice(item.price)}
+            </p>
             {item.description && (
-              <p className="mb-3 text-sm leading-relaxed text-black/60 dark:text-white/60">
+              <p className="mb-6 text-sm leading-relaxed text-black/60 dark:text-white/60">
                 {item.description}
               </p>
             )}
-            <p className="mb-6 font-['Playfair_Display'] text-xl text-black dark:text-white">
-              {formatPrice(item.price)}
-            </p>
 
             {!item.inStock && (
               <p className="mb-4 border border-black/20 bg-black/5 px-3 py-2 text-xs uppercase tracking-widest text-black/50 dark:border-white/20 dark:bg-white/5 dark:text-white/50">
@@ -155,7 +155,30 @@ function OrderModal({ item, onClose }) {
             )}
 
             <div className="flex flex-col gap-4 font-['Work_Sans']">
-              {(has("sleeve") || has("size") || has("height") || has("age") || has("note")) && (
+              {/* Size — always shown and required, regardless of item.fields */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
+                  Size <span className="normal-case text-black/30 dark:text-white/30">(required)</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {availableSizes.map((s) => (
+                    <button
+                      type="button"
+                      key={s}
+                      onClick={() => setForm({ ...form, size: form.size === s ? "" : s })}
+                      className={`h-9 w-9 border text-xs transition-colors ${
+                        form.size === s
+                          ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
+                          : "border-black/15 text-black/60 hover:border-black/40 dark:border-white/15 dark:text-white/60 dark:hover:border-white/40"
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {(has("sleeve") || has("height") || has("age") || has("note")) && (
                 <p className="text-xs uppercase tracking-widest text-black/40 dark:text-white/40">
                   Tailor your fit <span className="normal-case text-black/30 dark:text-white/30">(all optional)</span>
                 </p>
@@ -174,30 +197,6 @@ function OrderModal({ item, onClose }) {
                         onClick={() => setForm({ ...form, sleeve: form.sleeve === s ? "" : s })}
                         className={`border px-3 py-2 text-xs uppercase tracking-wide transition-colors ${
                           form.sleeve === s
-                            ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
-                            : "border-black/15 text-black/60 hover:border-black/40 dark:border-white/15 dark:text-white/60 dark:hover:border-white/40"
-                        }`}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {has("size") && (
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
-                    Size
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {availableSizes.map((s) => (
-                      <button
-                        type="button"
-                        key={s}
-                        onClick={() => setForm({ ...form, size: form.size === s ? "" : s })}
-                        className={`h-9 w-9 border text-xs transition-colors ${
-                          form.size === s
                             ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
                             : "border-black/15 text-black/60 hover:border-black/40 dark:border-white/15 dark:text-white/60 dark:hover:border-white/40"
                         }`}
@@ -260,10 +259,10 @@ function OrderModal({ item, onClose }) {
             <button
               type="button"
               onClick={handleAddToCart}
-              disabled={!item.inStock}
+              disabled={!item.inStock || !form.size}
               className="mt-auto flex items-center justify-center gap-2 border border-black bg-black px-6 py-3 text-sm uppercase tracking-widest text-white transition-colors hover:bg-white hover:text-black disabled:opacity-50 dark:border-white dark:bg-white dark:text-black dark:hover:bg-black dark:hover:text-white"
             >
-              {added ? "Added ✓" : "Add to Cart"}
+              {added ? "Added ✓" : !item.inStock ? "Add to Cart" : !form.size ? "Select a size" : "Add to Cart"}
             </button>
           </div>
         </motion.div>

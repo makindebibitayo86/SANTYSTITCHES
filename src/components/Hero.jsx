@@ -72,24 +72,24 @@ function Hero() {
         <div className="max-w-7xl mx-auto px-6 md:px-10 h-full min-h-[85vh] flex flex-col md:flex-row items-center">
           {/* Text */}
           <div className="relative z-10 w-full md:w-[42%] py-20 md:py-0 md:-ml-16 lg:-ml-24">
-            <p className="text-xs tracking-[0.3em] uppercase text-black/50 dark:text-white/50 mb-6">
+            <p className="text-xs tracking-[0.3em] uppercase text-white/80 md:text-black/50 md:dark:text-white/50 mb-6">
               Bespoke Menswear
             </p>
-            <h1 className="font-['Playfair_Display'] text-5xl sm:text-6xl lg:text-7xl font-semibold leading-[1.05] text-black dark:text-white">
+            <h1 className="font-['Playfair_Display'] text-5xl sm:text-6xl lg:text-7xl font-semibold leading-[1.05] text-white md:text-black md:dark:text-white">
               <span className="whitespace-nowrap">Style &amp;</span>
               <br />
               Convenience
               <br />
-              <span className="text-black/30 dark:text-white/30">More than mere Outfits.</span>
+              <span className="text-white/50 md:text-black/30 md:dark:text-white/30">More than mere Outfits.</span>
             </h1>
-            <p className="font-['Work_Sans'] mt-6 max-w-sm text-black/60 dark:text-white/60">
+            <p className="font-['Work_Sans'] mt-6 max-w-sm text-white/85 md:text-black/60 md:dark:text-white/60">
               Every measurement exact. Every seam intentional. This is
               menswear with nothing left to chance stitch by stitch.
             </p>
             <div className="mt-10">
               <a
                 href="#shop"
-                className="inline-block text-sm tracking-widest uppercase border border-black dark:border-white px-7 py-3 text-black dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+                className="inline-block text-sm tracking-widest uppercase border px-7 py-3 transition-colors border-white text-white hover:bg-white hover:text-black md:border-black md:text-black md:hover:bg-black md:hover:text-white md:dark:border-white md:dark:text-white md:dark:hover:bg-white md:dark:hover:text-black"
               >
                 Explore Collection
               </a>
@@ -97,17 +97,20 @@ function Hero() {
           </div>
         </div>
 
-        {/* Gallery — auto-rotating crossfade. Fills the full remaining
-            area (left edge fixed near where the text column ends, right
-            edge flush with the viewport, full height of the hero) so
-            there's no dead space above/below/right of the image.
+        {/* Gallery — auto-rotating crossfade. Below md, this is the
+            full-bleed background for the whole hero (text sits on top of
+            it with a scrim behind for legibility). From md up it becomes
+            the desktop split-screen treatment: left edge fixed near where
+            the text column ends, right edge flush with the viewport, full
+            height of the hero, so there's no dead space above/below/right
+            of the image.
 
             Photo uses object-cover so it fills the box completely at
             every edge — right, top, and bottom stay crisp with zero
             blur or gap. Only the left edge gets a thin fade/blur strip
-            to dissolve into the text column; everything else is the
-            plain, unblurred photo. */}
-        <div className="absolute left-[36%] sm:left-[37%] md:left-[38%] lg:left-[36%] right-0 top-0 bottom-0 opacity-90 md:opacity-100 pointer-events-none select-none overflow-hidden">
+            (md and up only) to dissolve into the text column; everything
+            else is the plain, unblurred photo. */}
+        <div className="absolute inset-0 md:left-[38%] lg:left-[36%] pointer-events-none select-none overflow-hidden">
           {status === "loading" && (
             <div className="absolute inset-0 flex items-center justify-center">
               <span className="h-8 w-8 rounded-full border-2 border-black/15 dark:border-white/15 border-t-black/60 dark:border-t-white/60 animate-spin" />
@@ -129,31 +132,42 @@ function Hero() {
             </AnimatePresence>
           )}
 
+          {/* Below md, the photo is a full-bleed background — darken it
+              with a scrim so the overlaid text stays legible regardless
+              of what's in the photo. Not needed from md up, where the
+              text moves onto the solid section background instead. */}
+          <div className="absolute inset-0 md:hidden bg-gradient-to-r from-black/80 via-black/45 to-black/10" />
+          <div className="absolute inset-0 md:hidden bg-gradient-to-t from-black/55 via-transparent to-transparent" />
+
           {/* Fade the LEFT EDGE ONLY into the page background — a thin
               strip (0-8% of box width), light blur. Masked so it never
-              touches the right, top, or bottom edges. */}
-          <div
-            className="absolute inset-0 z-10 block dark:hidden"
-            style={{
-              background:
-                "linear-gradient(to right, white 0%, rgba(255,255,255,0.15) 4%, rgba(255,255,255,0) 8%)",
-              backdropFilter: "blur(2px)",
-              WebkitBackdropFilter: "blur(2px)",
-              maskImage: "linear-gradient(to right, black 0%, black 3%, transparent 8%)",
-              WebkitMaskImage: "linear-gradient(to right, black 0%, black 3%, transparent 8%)",
-            }}
-          />
-          <div
-            className="absolute inset-0 z-10 hidden dark:block"
-            style={{
-              background:
-                "linear-gradient(to right, black 0%, rgba(0,0,0,0.15) 4%, rgba(0,0,0,0) 8%)",
-              backdropFilter: "blur(2px)",
-              WebkitBackdropFilter: "blur(2px)",
-              maskImage: "linear-gradient(to right, black 0%, black 3%, transparent 8%)",
-              WebkitMaskImage: "linear-gradient(to right, black 0%, black 3%, transparent 8%)",
-            }}
-          />
+              touches the right, top, or bottom edges. md and up only —
+              below md there's no adjacent solid-color column to fade
+              into, since the photo is the full-bleed background. */}
+          <div className="hidden md:block">
+            <div
+              className="absolute inset-0 z-10 block dark:hidden"
+              style={{
+                background:
+                  "linear-gradient(to right, white 0%, rgba(255,255,255,0.15) 4%, rgba(255,255,255,0) 8%)",
+                backdropFilter: "blur(2px)",
+                WebkitBackdropFilter: "blur(2px)",
+                maskImage: "linear-gradient(to right, black 0%, black 3%, transparent 8%)",
+                WebkitMaskImage: "linear-gradient(to right, black 0%, black 3%, transparent 8%)",
+              }}
+            />
+            <div
+              className="absolute inset-0 z-10 hidden dark:block"
+              style={{
+                background:
+                  "linear-gradient(to right, black 0%, rgba(0,0,0,0.15) 4%, rgba(0,0,0,0) 8%)",
+                backdropFilter: "blur(2px)",
+                WebkitBackdropFilter: "blur(2px)",
+                maskImage: "linear-gradient(to right, black 0%, black 3%, transparent 8%)",
+                WebkitMaskImage: "linear-gradient(to right, black 0%, black 3%, transparent 8%)",
+              }}
+            />
+          </div>
         </div>
 
         {/* Slide controls */}
