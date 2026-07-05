@@ -90,7 +90,11 @@ function Hero() {
             </p>
             <div className="mt-10">
               <a
-                href="#shop"
+                href="#collections"
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById("collections")?.scrollIntoView({ behavior: "smooth" });
+                }}
                 className="inline-block text-sm tracking-widest uppercase border px-7 py-3 transition-colors border-white text-white hover:bg-white hover:text-black md:border-black md:text-black md:hover:bg-black md:hover:text-white md:dark:border-white md:dark:text-white md:dark:hover:bg-white md:dark:hover:text-black"
               >
                 Explore Collection
