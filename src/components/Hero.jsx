@@ -80,7 +80,9 @@ function Hero() {
               <br />
               Convenience
               <br />
-              <span className="text-white/50 md:text-black/30 md:dark:text-white/30">More than mere Outfits.</span>
+              <span className="text-white/50 md:text-black/30 md:dark:text-white/30">
+                More than<br className="md:hidden" /> mere Outfits.
+              </span>
             </h1>
             <p className="font-['Work_Sans'] mt-6 max-w-sm text-white/85 md:text-black/60 md:dark:text-white/60">
               Every measurement exact. Every seam intentional. This is
