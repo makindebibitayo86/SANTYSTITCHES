@@ -260,7 +260,7 @@ function OrderModal({ item, onClose }) {
               type="button"
               onClick={handleAddToCart}
               disabled={!item.inStock || !form.size}
-              className="mt-auto flex items-center justify-center gap-2 border border-black bg-black px-6 py-3 text-sm uppercase tracking-widest text-white transition-colors hover:bg-white hover:text-black disabled:opacity-50 dark:border-white dark:bg-white dark:text-black dark:hover:bg-black dark:hover:text-white"
+              className="mt-8 flex items-center justify-center gap-2 border border-black bg-black px-6 py-3 text-sm uppercase tracking-widest text-white transition-colors hover:bg-white hover:text-black disabled:opacity-50 dark:border-white dark:bg-white dark:text-black dark:hover:bg-black dark:hover:text-white md:mt-auto"
             >
               {added ? "Added ✓" : !item.inStock ? "Add to Cart" : !form.size ? "Select a size" : "Add to Cart"}
             </button>

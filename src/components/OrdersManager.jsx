@@ -12,6 +12,17 @@ async function fetchOrders() {
   return data.orders || [];
 }
 
+// Google Sheets stores phone numbers as plain numbers when it can, which
+// silently drops a leading zero (e.g. "08031234567" becomes 8031234567).
+// Nigerian mobile numbers are 11 digits starting with 0 — if we get exactly
+// 10 digits with no leading zero, that zero almost certainly got eaten.
+function formatPhone(phone) {
+  if (phone === null || phone === undefined || phone === "") return "";
+  const str = String(phone).trim();
+  if (/^\d{10}$/.test(str)) return `0${str}`;
+  return str;
+}
+
 function formatPrice(price) {
   if (price === null || price === undefined || price === "") return "—";
   return `₦${Number(price).toLocaleString()}`;
@@ -147,7 +158,7 @@ function OrderDetailModal({ order, onClose }) {
   const items = getOrderItems(order);
   const total = getOrderTotal(order);
   const status = getOrderStatus(order);
-  const contact = [order.phone, order.email].filter(Boolean);
+  const contact = [formatPhone(order.phone), order.email].filter(Boolean);
 
   const handleBackdrop = (e) => {
     if (e.target === e.currentTarget) onClose();
@@ -160,14 +171,14 @@ function OrderDetailModal({ order, onClose }) {
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
       <motion.div
-        className="fixed inset-0 z-[100] flex items-end justify-center bg-black/70 backdrop-blur-sm md:items-center md:p-8"
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm md:p-8"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={handleBackdrop}
       >
         <motion.div
-          className="no-scrollbar relative max-h-[90vh] w-full max-w-md overflow-y-auto border-2 border-black bg-white p-6 shadow-2xl dark:border-white dark:bg-black md:p-8"
+          className="no-scrollbar relative max-h-[90dvh] w-full max-w-md overflow-y-auto border-2 border-black bg-white p-6 shadow-2xl dark:border-white dark:bg-black md:p-8"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
@@ -372,7 +383,7 @@ function OrdersManager() {
                   </td>
                   <td className="px-4 py-3 text-black/80 dark:text-white/80">{o.name || "—"}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-black/60 dark:text-white/60">
-                    {o.phone || "—"}
+                    {formatPhone(o.phone) || "—"}
                   </td>
                   <td className="px-4 py-3 text-black/60 dark:text-white/60">{o.size || "—"}</td>
                   <td className="whitespace-nowrap px-4 py-3 font-['Playfair_Display'] text-black dark:text-white">

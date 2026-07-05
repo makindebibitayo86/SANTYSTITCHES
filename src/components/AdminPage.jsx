@@ -176,11 +176,11 @@ function LoginGate({ onSuccess }) {
           alt="Santy Stitches"
           className="mx-auto mb-6 h-24 w-auto dark:invert transition-all"
         />
-        <span className="mb-2 block text-[0.65rem] uppercase tracking-[0.3em] text-black/40 dark:text-white/40">
+        <span className="mb-2 block text-center text-[0.65rem] uppercase tracking-[0.3em] text-black/40 dark:text-white/40">
           Admin Access
         </span>
-        <h1 className="mb-6 font-['Playfair_Display'] text-2xl font-semibold text-black dark:text-white">
-          Sign in to manage products
+        <h1 className="mb-6 text-center font-['Playfair_Display'] text-2xl font-semibold text-black dark:text-white">
+          Sign in to manage live site
         </h1>
 
         <label className="mb-1.5 block text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
@@ -616,7 +616,7 @@ function ProductForm({ product, onCancel, onSave, saving }) {
               </div>
             </Field>
 
-            <Field label="Sort order" hint="lower shows first, leave 0 for default">
+            <Field label="Sort order" hint="lower shows first on the storefront, leave 0 for default">
               <input type="number" className={inputClass} value={form.sortOrder} onChange={(e) => set("sortOrder", e.target.value)} placeholder="0" />
             </Field>
 
@@ -848,6 +848,7 @@ function CatalogueManager({ onNavigate }) {
   const [deleting, setDeleting] = useState(false);
   const [busyId, setBusyId] = useState(null);
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All"); // All / Visible / Hidden
   const [page, setPage] = useState(1);
@@ -870,19 +871,37 @@ function CatalogueManager({ onNavigate }) {
   useEffect(() => { load(); }, [load]);
 
   const filtered = useMemo(() => {
-    return products.filter((p) => {
-      if (categoryFilter !== "All" && p.category !== categoryFilter) return false;
-      if (statusFilter === "Visible" && !isTrue(p.active)) return false;
-      if (statusFilter === "Hidden" && isTrue(p.active)) return false;
-      if (search.trim() && !String(p.name).toLowerCase().includes(search.trim().toLowerCase())) return false;
-      return true;
-    });
-  }, [products, categoryFilter, statusFilter, search]);
+    const getDate = (p) => new Date(p.createdAt || p.updatedAt || 0).getTime() || 0;
+    const getPrice = (p) => (p.price === null || p.price === undefined ? 0 : Number(p.price));
+
+    const comparators = {
+      newest: (a, b) => getDate(b) - getDate(a),
+      oldest: (a, b) => getDate(a) - getDate(b),
+      "az": (a, b) => String(a.name).localeCompare(String(b.name)),
+      "za": (a, b) => String(b.name).localeCompare(String(a.name)),
+      cheapest: (a, b) => getPrice(a) - getPrice(b),
+      expensive: (a, b) => getPrice(b) - getPrice(a),
+    };
+
+    return products
+      .filter((p) => {
+        if (categoryFilter !== "All" && p.category !== categoryFilter) return false;
+        if (statusFilter === "Visible" && !isTrue(p.active)) return false;
+        if (statusFilter === "Hidden" && isTrue(p.active)) return false;
+        if (search.trim() && !String(p.name).toLowerCase().includes(search.trim().toLowerCase())) return false;
+        return true;
+      })
+      // createdAt is a real server-side timestamp set once in Code.gs on
+      // create and never touched again, so it's a reliable "newest"/"oldest"
+      // key — unlike sortOrder (storefront display order, admin-editable)
+      // or id (a random UUID, not chronological).
+      .sort(comparators[sortBy] || comparators.newest);
+  }, [products, categoryFilter, statusFilter, search, sortBy]);
 
   // Any change to what's being filtered should snap back to page 1 — otherwise
   // e.g. narrowing a search while sitting on page 4 can strand the view on a
   // page that no longer has any rows.
-  useEffect(() => { setPage(1); }, [search, categoryFilter, statusFilter]);
+  useEffect(() => { setPage(1); }, [search, sortBy, categoryFilter, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   // Clamp if the current page is now out of range (e.g. after a delete shrinks
@@ -990,19 +1009,27 @@ function CatalogueManager({ onNavigate }) {
         </div>
 
         {/* Filters */}
-        <div className="mb-6 flex flex-wrap items-center gap-3">
+        <div className="mb-6 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
           <input
             type="text"
             placeholder="Search by name…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="min-w-[180px] flex-1 border border-black/15 bg-transparent px-3 py-2 text-sm text-black outline-none focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white"
+            className="min-w-[140px] flex-1 border border-black/15 bg-transparent px-3 py-2 text-sm text-black outline-none focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white"
           />
-          <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="border border-black/15 bg-transparent px-3 py-2 text-sm text-black outline-none focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white dark:[color-scheme:dark]">
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="shrink-0 border border-black/15 bg-transparent px-3 py-2 text-sm text-black outline-none focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white dark:[color-scheme:dark]">
+            <option value="newest" className={optionClass}>Newest first</option>
+            <option value="oldest" className={optionClass}>Oldest first</option>
+            <option value="az" className={optionClass}>Name A–Z</option>
+            <option value="za" className={optionClass}>Name Z–A</option>
+            <option value="cheapest" className={optionClass}>Price: low to high</option>
+            <option value="expensive" className={optionClass}>Price: high to low</option>
+          </select>
+          <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="shrink-0 border border-black/15 bg-transparent px-3 py-2 text-sm text-black outline-none focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white dark:[color-scheme:dark]">
             <option value="All" className={optionClass}>All categories</option>
             {CATEGORIES.map((c) => <option key={c} value={c} className={optionClass}>{c}</option>)}
           </select>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="border border-black/15 bg-transparent px-3 py-2 text-sm text-black outline-none focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white dark:[color-scheme:dark]">
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="shrink-0 border border-black/15 bg-transparent px-3 py-2 text-sm text-black outline-none focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white dark:[color-scheme:dark]">
             <option value="All" className={optionClass}>All statuses</option>
             <option value="Visible" className={optionClass}>Visible only</option>
             <option value="Hidden" className={optionClass}>Hidden only</option>
