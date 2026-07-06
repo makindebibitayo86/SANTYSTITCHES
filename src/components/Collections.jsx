@@ -440,8 +440,8 @@ export default function Collections() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="collections-track flex touch-pan-x gap-4 overflow-x-auto"
-                style={{ WebkitOverflowScrolling: "touch" }}
+                className="collections-track flex gap-4 overflow-x-auto"
+                style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x pan-y" }}
                 onMouseEnter={pauseMarquee}
                 onMouseLeave={() => resumeMarquee(0)}
                 onTouchStart={pauseMarquee}

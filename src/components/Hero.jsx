@@ -68,37 +68,54 @@ function Hero() {
 
   return (
     <section className="relative overflow-hidden bg-white dark:bg-black transition-colors">
-      <div className="relative min-h-[85vh]">
-        <div className="max-w-7xl mx-auto px-6 md:px-10 h-full min-h-[85vh] flex flex-col md:flex-row items-center">
-          {/* Text */}
-          <div className="relative z-10 w-full md:w-[42%] py-20 md:py-0 md:-ml-16 lg:-ml-24">
-            <p className="text-xs tracking-[0.3em] uppercase text-white/80 md:text-black/50 md:dark:text-white/50 mb-6">
-              Bespoke Menswear
-            </p>
+      <div className="relative min-h-[85vh] flex flex-col">
+        <div className="max-w-7xl mx-auto px-6 md:px-10 w-full flex-1 md:flex-none md:h-full md:min-h-[85vh] flex flex-col md:flex-row items-center">
+          {/* Text — on mobile this grows (flex-1) to fill the hero's full
+              height and distributes its groups (tagline / headline /
+              paragraph+CTA) with space-between, so content uses the
+              vertical space instead of clustering at the top with dead
+              air below. flex-1/flex-grow is used instead of h-full
+              because the ancestor only sets min-height, not height, so
+              percentage heights don't resolve — flex growth doesn't have
+              that problem. From md up this reverts to normal block flow
+              (original layout). */}
+          <div className="relative z-10 w-full md:w-[42%] flex-1 md:flex-none md:h-auto pt-8 pb-16 md:py-0 flex flex-col justify-center gap-8 md:block md:-ml-16 lg:-ml-24">
+            <div>
+              <p className="text-xs tracking-[0.3em] uppercase text-white/80 md:text-black/50 md:dark:text-white/50 mb-3">
+                Ritzy Bespoke Wears
+              </p>
+              <p className="text-xs tracking-[0.3em] uppercase text-white/50 md:text-black/30 md:dark:text-white/30 mb-3">
+                Est X MMXI
+              </p>
+            </div>
+
             <h1 className="font-['Playfair_Display'] text-5xl sm:text-6xl lg:text-7xl font-semibold leading-[1.05] text-white md:text-black md:dark:text-white">
               <span className="whitespace-nowrap">Style &amp;</span>
               <br />
-              Convenience
+              Convenience;
               <br />
               <span className="text-white/50 md:text-black/30 md:dark:text-white/30">
-                More than<br className="md:hidden" /> mere Outfits.
+                Its More than<br className="md:hidden" /> Mere Outfits.
               </span>
             </h1>
-            <p className="font-['Work_Sans'] mt-6 max-w-sm text-white/85 md:text-black/60 md:dark:text-white/60">
-              Every measurement exact. Every seam intentional. This is
-              menswear with nothing left to chance stitch by stitch.
-            </p>
-            <div className="mt-10">
-              <a
-                href="#collections"
-                onClick={(e) => {
-                  e.preventDefault();
-                  document.getElementById("collections")?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="inline-block text-sm tracking-widest uppercase border px-7 py-3 transition-colors border-white text-white hover:bg-white hover:text-black md:border-black md:text-black md:hover:bg-black md:hover:text-white md:dark:border-white md:dark:text-white md:dark:hover:bg-white md:dark:hover:text-black"
-              >
-                Explore Collection
-              </a>
+
+            <div>
+              <p className="font-['Work_Sans'] mt-6 md:mt-6 max-w-sm text-white/85 md:text-black/60 md:dark:text-white/60">
+                Every measurement exact. Every seam intentional. This is
+                menswear with nothing left to chance stitch by stitch.
+              </p>
+              <div className="mt-10">
+                <a
+                  href="#collections"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById("collections")?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="inline-block text-sm tracking-widest uppercase border px-7 py-3 transition-colors border-white text-white hover:bg-white hover:text-black md:border-black md:text-black md:hover:bg-black md:hover:text-white md:dark:border-white md:dark:text-white md:dark:hover:bg-white md:dark:hover:text-black"
+                >
+                  Explore Collection
+                </a>
+              </div>
             </div>
           </div>
         </div>

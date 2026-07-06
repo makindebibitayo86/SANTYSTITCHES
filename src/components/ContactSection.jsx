@@ -24,9 +24,9 @@ const EmailIcon = () => (
   </svg>
 );
 
-const SnapchatIcon = () => (
+const TikTokIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-    <path d="M12.06 2c2.99 0 5.51 2.2 5.83 5.13.08.7.06 1.77.04 2.65l-.01.34c.02.04.18.13.51.16.42.05.92-.1 1.36-.27a.6.6 0 01.55.05c.18.12.28.31.27.51-.04.61-.69 1.07-1.96 1.4-.07.15-.05.51.07.92.16.08.49.16.96.16.36 0 .68.21.79.55.1.31-.01.65-.27.86-.39.31-1.34.69-2.78.9-.06.18-.16.6-.24.95-.1.45-.51.74-1 .69-.27-.03-.65-.06-1.07-.06-.61 0-1.07.13-1.6.46-.7.43-1.49.93-2.45.93s-1.75-.5-2.45-.93c-.53-.33-.99-.46-1.6-.46-.42 0-.8.03-1.07.06-.49.05-.9-.24-1-.69-.08-.35-.18-.77-.24-.95-1.44-.21-2.39-.59-2.78-.9-.26-.21-.37-.55-.27-.86.11-.34.43-.55.79-.55.47 0 .8-.08.96-.16.12-.41.14-.77.07-.92-1.27-.33-1.92-.79-1.96-1.4-.01-.2.09-.39.27-.51a.6.6 0 01.55-.05c.44.17.94.32 1.36.27.33-.03.49-.12.51-.16l-.01-.34c-.02-.88-.04-1.95.04-2.65C6.55 4.2 9.07 2 12.06 2z" />
+    <path d="M16.6 5.82c-1.001-.997-1.564-2.354-1.564-3.82h-3.29v13.68c0 1.548-1.263 2.812-2.815 2.812a2.813 2.813 0 01-2.815-2.812 2.813 2.813 0 012.815-2.812c.31 0 .607.05.886.14v-3.34a6.05 6.05 0 00-.886-.066c-3.34 0-6.05 2.71-6.05 6.078 0 3.367 2.71 6.077 6.05 6.077s6.05-2.71 6.05-6.077V9.01a7.845 7.845 0 004.617 1.485V7.21a4.48 4.48 0 01-2.998-1.39z" />
   </svg>
 );
 
@@ -111,16 +111,16 @@ export default function ContactSection() {
       detail: "Quick response guaranteed",
     },
     {
-      href: "https://instagram.com/santystitches",
+      href: "https://instagram.com/santystitches_",
       icon: <InstagramIcon />,
       label: "Follow on Instagram",
-      detail: "@santystitches",
+      detail: "@santystitches_",
     },
     {
-      href: "https://snapchat.com/add/santyxwolf",
-      icon: <SnapchatIcon />,
-      label: "Add on Snapchat",
-      detail: "@santyxwolf",
+      href: "https://tiktok.com/@santystitches_",
+      icon: <TikTokIcon />,
+      label: "Follow on TikTok",
+      detail: "@santystitches_",
     },
   ];
 
@@ -248,8 +248,8 @@ export default function ContactSection() {
             <h2 className="cs-heading font-['Playfair_Display',Georgia,serif] text-[clamp(2rem,4vw,3rem)] font-bold leading-[1.15] mb-6">
               Lead Like
               <br />
-              <em className="cs-subheading not-italic font-normal">
-                An Alpha Wolf 🐾
+              <em className="cs-subheading not-italic font-normal block whitespace-nowrap">
+                An <span className="cs-heading font-bold">AlphaWolf</span>🐺🐾
               </em>
             </h2>
 

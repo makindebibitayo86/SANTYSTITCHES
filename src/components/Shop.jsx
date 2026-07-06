@@ -534,8 +534,8 @@ export default function Shop() {
           <div className="-mx-[clamp(1.5rem,5vw,6rem)] overflow-hidden px-[clamp(1.5rem,5vw,6rem)] pb-3">
             <div
               ref={trackRef}
-              className="shop-track flex touch-pan-x gap-4 overflow-x-auto"
-              style={{ WebkitOverflowScrolling: "touch" }}
+              className="shop-track flex gap-4 overflow-x-auto"
+              style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x pan-y" }}
               onMouseEnter={pauseMarquee}
               onMouseLeave={() => resumeMarquee(0)}
               onTouchStart={pauseMarquee}
