@@ -1,6 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
-import { API_URL } from "../config";
+import { useSiteData } from "../context/SiteDataContext";
 
 const PILLARS = [
   {
@@ -16,36 +16,6 @@ const PILLARS = [
     body: "Sleeve, height, size — someone from the house actually reads your details before anything's cut.",
   },
 ];
-
-// Owner photo lives in the "About" tab of the sheet (uploaded from
-// AdminAbout in the admin panel). No fallback placeholder — while loading
-// (or if nothing's been uploaded yet), the caller shows a skeleton instead.
-function useOwnerImage() {
-  const [imageUrl, setImageUrl] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    fetch(`${API_URL}?action=getAboutImage`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (!cancelled) setImageUrl(data?.image?.imageUrl || null);
-      })
-      .catch((err) => {
-        console.error("Failed to load owner photo:", err);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return { imageUrl, loading };
-}
 
 // The desktop grid layout is designed at (and intended to kick in at) the
 // Tailwind "md" breakpoint. Rather than reflow into a stacked mobile layout
@@ -94,7 +64,14 @@ function useDesktopZoom(referenceWidth) {
 export default function About() {
   const { outerRef, contentRef, scale, wrapperHeight } = useDesktopZoom(DESKTOP_REFERENCE_WIDTH);
   const isScaled = scale < 1;
-  const { imageUrl: ownerImage, loading: ownerImageLoading } = useOwnerImage();
+  // Owner photo now comes from the shared bootstrap fetch (see
+  // SiteDataContext) instead of About.jsx fetching getAboutImage on its
+  // own. Loading is true only while the shared fetch is still in flight —
+  // once it resolves, a null aboutImage just means nothing's been
+  // uploaded yet, same as before.
+  const { aboutImage, status: dataStatus } = useSiteData();
+  const ownerImage = aboutImage?.imageUrl || null;
+  const ownerImageLoading = dataStatus === "loading";
 
   return (
     <section
@@ -146,19 +123,31 @@ export default function About() {
                 <br />
                 <span className="text-black/30 dark:text-white/30">Never Off The Rack.</span>
               </h2>
-              <p className="mb-4 text-base leading-relaxed text-black/60 dark:text-white/60">
-                Santy built the house on one belief: nothing leaves with his name on it unless it's
-                original. Not inspired by, not adapted from — made from nothing but the idea itself.
+              <p className="mb-4 text-justify text-base leading-relaxed text-black/60 dark:text-white/60">
+                Santy Stitches is a luxury clothing brand that reimagines elegance through the lens
+                of modern sophistication and artisanal excellence. Santy built the house on one
+                belief: nothing leaves with his name on it unless it's original.
               </p>
-              <p className="mb-4 text-base leading-relaxed text-black/60 dark:text-white/60">
-                The first piece to carry the wolf, the First Howl, set the standard every piece
-                since has had to match. Authenticity first, quality without compromise, or it
-                doesn't ship.
+              <p className="mb-4 text-justify text-base leading-relaxed text-black/60 dark:text-white/60">
+                Not inspired by, not adapted from — made from nothing but the idea itself while
+                meticulously crafted for those who value quality, distinction, and timeless style;
+                offering an exclusive collection of outfits that blends refined aesthetics with
+                unparalleled attention to details making them perfect for individuals who
+                appreciate quiet confidence while embodying understated luxury.
               </p>
-              <p className="text-base leading-relaxed text-black/60 dark:text-white/60">
-                Out of Ibadan, Santy is building toward one thing: Nigerian craft, held to a
-                standard the rest of the world has to take seriously.
+              <p className="mb-6 text-justify text-base leading-relaxed text-black/60 dark:text-white/60">
+                The first piece to carry the wolf insignia; the First Howl set the standard that
+                every other piece has had to match. Authenticity first, quality without
+                compromise, or it doesn't ship.
               </p>
+              <blockquote className="border-l-2 border-black/15 pl-5 dark:border-white/15">
+                <p className="font-['Playfair_Display'] text-lg italic leading-relaxed text-black/70 dark:text-white/70">
+                  "Style and Convenience; it's more than mere outfits."
+                </p>
+                <footer className="mt-2 text-[0.7rem] uppercase tracking-[0.3em] text-black/40 dark:text-white/40">
+                  — Santy A.W
+                </footer>
+              </blockquote>
             </div>
           </div>
 

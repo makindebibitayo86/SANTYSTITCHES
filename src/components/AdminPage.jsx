@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-import { API_URL, ADMIN_SESSION_KEY, ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_TOKEN } from "../config";
+import { API_URL, ADMIN_SESSION_KEY, ADMIN_TOKEN } from "../config";
 import logo from "../assets/santy-stitches-logo-transparent.png";
 import AdminNavbar from "./AdminNavbar";
 import AdminSidebar from "./AdminSidebar";
@@ -151,26 +151,11 @@ async function callApi(action, payload = {}) {
 /* ---------------------------------------------------------- */
 
 function LoginGate({ onSuccess }) {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-
-  function handleSubmit(e) {
-    e.preventDefault();
-    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-      sessionStorage.setItem(ADMIN_SESSION_KEY, "1");
-      onSuccess();
-    } else {
-      setError("Incorrect username or password");
-    }
-  }
+  const [mode, setMode] = useState("signin"); // "signin" | "changePassword"
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-white px-6 dark:bg-black">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-sm border border-black/10 p-8 dark:border-white/10"
-      >
+      <div className="w-full max-w-sm border border-black/10 p-8 dark:border-white/10">
         <img
           src={logo}
           alt="Santy Stitches"
@@ -179,44 +164,233 @@ function LoginGate({ onSuccess }) {
         <span className="mb-2 block text-center text-[0.65rem] uppercase tracking-[0.3em] text-black/40 dark:text-white/40">
           Admin Access
         </span>
-        <h1 className="mb-6 text-center font-['Playfair_Display'] text-2xl font-semibold text-black dark:text-white">
-          Sign in to manage live site
-        </h1>
 
-        <label className="mb-1.5 block text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
-          Username
-        </label>
-        <input
-          type="text"
-          autoFocus
-          autoCapitalize="off"
-          autoCorrect="off"
-          value={username}
-          onChange={(e) => { setUsername(e.target.value); setError(""); }}
-          className="mb-4 w-full border border-black/15 bg-transparent px-3 py-2.5 text-sm text-black outline-none transition-colors focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white"
-        />
-
-        <label className="mb-1.5 block text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
-          Password
-        </label>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => { setPassword(e.target.value); setError(""); }}
-          className="mb-1.5 w-full border border-black/15 bg-transparent px-3 py-2.5 text-sm text-black outline-none transition-colors focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white"
-        />
-        {error && <p className="mb-4 text-xs text-red-500">{error}</p>}
-        {!error && <div className="mb-4" />}
+        {mode === "signin" ? (
+          <SignInForm onSuccess={onSuccess} />
+        ) : (
+          <ChangePasswordForm onDone={() => setMode("signin")} />
+        )}
 
         <button
-          type="submit"
-          disabled={!username || !password}
-          className="w-full border border-black bg-black px-6 py-3 text-sm uppercase tracking-widest text-white transition-colors hover:bg-white hover:text-black disabled:opacity-50 dark:border-white dark:bg-white dark:text-black dark:hover:bg-black dark:hover:text-white"
+          type="button"
+          onClick={() => setMode(mode === "signin" ? "changePassword" : "signin")}
+          className="mt-5 w-full text-center text-xs uppercase tracking-widest text-black/40 underline decoration-black/20 underline-offset-4 transition-colors hover:text-black dark:text-white/40 dark:decoration-white/20 dark:hover:text-white"
         >
-          Enter
+          {mode === "signin" ? "Change password instead" : "Back to sign in"}
         </button>
-      </form>
+      </div>
     </div>
+  );
+}
+
+// Password input with a show/hide toggle — lets the admin double-check what
+// they typed before submitting, since login/password fields are otherwise
+// impossible to visually verify. Purely a client-side display toggle; the
+// value itself is unaffected either way.
+function PasswordField({ value, onChange, autoFocus, wrapperClassName = "mb-4" }) {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <div className={`relative ${wrapperClassName}`}>
+      <input
+        type={visible ? "text" : "password"}
+        autoFocus={autoFocus}
+        value={value}
+        onChange={onChange}
+        className="w-full border border-black/15 bg-transparent px-3 py-2.5 pr-10 text-sm text-black outline-none transition-colors focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white"
+      />
+      <button
+        type="button"
+        onClick={() => setVisible((v) => !v)}
+        tabIndex={-1}
+        aria-label={visible ? "Hide password" : "Show password"}
+        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-black/35 transition-colors hover:text-black dark:text-white/35 dark:hover:text-white"
+      >
+        {visible ? (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.3 21.3 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 5c7 0 11 7 11 7a21.3 21.3 0 0 1-4.22 5.19M1 1l22 22" />
+            <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+          </svg>
+        ) : (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        )}
+      </button>
+    </div>
+  );
+}
+
+// Verified server-side (see Code.gs "adminLogin") rather than compared
+// against a hardcoded constant baked into this bundle — that's what makes
+// it possible for the password to actually be changed later.
+function SignInForm({ onSuccess }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError("");
+    try {
+      await callApi("adminLogin", { username, password });
+      sessionStorage.setItem(ADMIN_SESSION_KEY, "1");
+      onSuccess();
+    } catch (err) {
+      setError(err.message || "Incorrect username or password");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <h1 className="mb-6 text-center font-['Playfair_Display'] text-2xl font-semibold text-black dark:text-white">
+        Sign in to manage live site
+      </h1>
+
+      <label className="mb-1.5 block text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
+        Username
+      </label>
+      <input
+        type="text"
+        autoFocus
+        autoCapitalize="off"
+        autoCorrect="off"
+        value={username}
+        onChange={(e) => { setUsername(e.target.value); setError(""); }}
+        className="mb-4 w-full border border-black/15 bg-transparent px-3 py-2.5 text-sm text-black outline-none transition-colors focus:border-black dark:border-white/15 dark:text-white dark:focus:border-white"
+      />
+
+      <label className="mb-1.5 block text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
+        Password
+      </label>
+      <PasswordField
+        value={password}
+        onChange={(e) => { setPassword(e.target.value); setError(""); }}
+        wrapperClassName="mb-1.5"
+      />
+      {error && <p className="mb-4 text-xs text-red-500">{error}</p>}
+      {!error && <div className="mb-4" />}
+
+      <button
+        type="submit"
+        disabled={!username || !password || submitting}
+        className="w-full border border-black bg-black px-6 py-3 text-sm uppercase tracking-widest text-white transition-colors hover:bg-white hover:text-black disabled:opacity-50 dark:border-white dark:bg-white dark:text-black dark:hover:bg-black dark:hover:text-white"
+      >
+        {submitting ? "Checking…" : "Enter"}
+      </button>
+    </form>
+  );
+}
+
+// Lets whoever knows the CURRENT password set a new one, right from the
+// login screen — no session required. Verified server-side (Code.gs
+// "changeAdminPassword"), which re-checks oldPassword against the stored
+// hash before writing a new one, so this is no less secure than requiring
+// it after login: knowing the current password is the only thing that
+// ever authorizes a change, wherever the form lives.
+function ChangePasswordForm({ onDone }) {
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
+
+    if (newPassword.length < 8) {
+      setError("New password must be at least 8 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError("New password and confirmation don't match.");
+      return;
+    }
+    if (newPassword === oldPassword) {
+      setError("New password must be different from the current password.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await callApi("changeAdminPassword", { oldPassword, newPassword });
+      setSuccess(true);
+    } catch (err) {
+      setError(err.message || "Something went wrong");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (success) {
+    return (
+      <div>
+        <h1 className="mb-4 text-center font-['Playfair_Display'] text-2xl font-semibold text-black dark:text-white">
+          Password updated
+        </h1>
+        <p className="mb-6 text-center text-sm text-black/70 dark:text-white/70">
+          Use your new password next time you sign in.
+        </p>
+        <button
+          type="button"
+          onClick={onDone}
+          className="w-full border border-black bg-black px-6 py-3 text-sm uppercase tracking-widest text-white transition-colors hover:bg-white hover:text-black dark:border-white dark:bg-white dark:text-black dark:hover:bg-black dark:hover:text-white"
+        >
+          Back to sign in
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <h1 className="mb-6 text-center font-['Playfair_Display'] text-2xl font-semibold text-black dark:text-white">
+        Change password
+      </h1>
+
+      <label className="mb-1.5 block text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
+        Current password
+      </label>
+      <PasswordField
+        autoFocus
+        value={oldPassword}
+        onChange={(e) => { setOldPassword(e.target.value); setError(""); }}
+      />
+
+      <label className="mb-1.5 block text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
+        New password
+      </label>
+      <PasswordField
+        value={newPassword}
+        onChange={(e) => { setNewPassword(e.target.value); setError(""); }}
+      />
+
+      <label className="mb-1.5 block text-xs uppercase tracking-widest text-black/50 dark:text-white/50">
+        Confirm new password
+      </label>
+      <PasswordField
+        value={confirmPassword}
+        onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }}
+        wrapperClassName="mb-1.5"
+      />
+      {error && <p className="mb-4 text-xs text-red-500">{error}</p>}
+      {!error && <div className="mb-4" />}
+
+      <button
+        type="submit"
+        disabled={!oldPassword || !newPassword || !confirmPassword || submitting}
+        className="w-full border border-black bg-black px-6 py-3 text-sm uppercase tracking-widest text-white transition-colors hover:bg-white hover:text-black disabled:opacity-50 dark:border-white dark:bg-white dark:text-black dark:hover:bg-black dark:hover:text-white"
+      >
+        {submitting ? "Saving…" : "Save new password"}
+      </button>
+    </form>
   );
 }
 

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-import { API_URL } from "../config";
+import { useSiteData } from "../context/SiteDataContext";
 
 // Tracks whether the viewport is "mobile" width, reacting to resize/rotate.
 function useIsMobileViewport() {
@@ -224,40 +224,18 @@ function TrioSkeleton({ variant }) {
 export default function Collections() {
   const [tab, setTab] = useState("new");
   const [activeProduct, setActiveProduct] = useState(null);
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [dataError, setDataError] = useState(null);
-  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Products now come from the shared bootstrap fetch (see
+  // SiteDataContext) instead of Collections.jsx fetching ?action=list on
+  // its own. "Try again" re-runs the whole shared fetch via refetch().
+  const { products, status: dataStatus, refetch } = useSiteData();
+  const loading = dataStatus === "loading";
+  const dataError = dataStatus === "error" ? "Could not load the collection" : null;
 
   const [trackEl, setTrackEl] = useState(null);
   const isPausedRef = useRef(false);
   const resumeTimeoutRef = useRef(null);
   const isMobileViewport = useIsMobileViewport();
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadProducts() {
-      setLoading(true);
-      setDataError(null);
-      try {
-        const res = await fetch(`${API_URL}?action=list`);
-        if (!res.ok) throw new Error(`Request failed (${res.status})`);
-        const data = await res.json();
-        if (!data.ok) throw new Error(data.error || "Failed to load products");
-        if (!cancelled) setProducts(data.products || []);
-      } catch (err) {
-        if (!cancelled) setDataError(err.message || "Could not load the collection");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    loadProducts();
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshKey]);
 
   // "New Arrivals" -> only items tagged "new".
   // "The Archive"  -> everything, regardless of tag (new, hot, limited, bestseller...).
@@ -414,7 +392,7 @@ export default function Collections() {
             </p>
             <button
               type="button"
-              onClick={() => setRefreshKey((k) => k + 1)}
+              onClick={refetch}
               className="border border-black px-5 py-2.5 text-sm uppercase tracking-widest text-black transition-colors hover:bg-black hover:text-white dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-black"
             >
               Try again

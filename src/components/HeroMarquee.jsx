@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import logo from "../assets/santy-stitches-logo-transparent.png";
 
-const MARQUEE_API_URL =
-  "https://script.google.com/macros/s/AKfycbxYKT-EicYDi3knVTj-DFavxscdeoZA1apaLkhzSIy-_SP-z2gLDin0-ntkvtnCWEwDlw/exec";
+import { useSiteData } from "../context/SiteDataContext";
 
 // Constant scroll speed, in pixels per second. Duration is derived from the
 // ACTUAL rendered width of the content (measured in the browser), not from
@@ -12,31 +11,21 @@ const PIXELS_PER_SECOND = 60;
 const DEFAULT_DURATION = 30; // used only for the first paint, before width is measured
 
 function HeroMarquee() {
-  const [messages, setMessages] = useState(null); // null = still loading
+  // Marquee messages now come from the shared bootstrap fetch (see
+  // SiteDataContext) instead of a separate fetch to its own hardcoded API
+  // URL — that URL previously duplicated (and could drift from) the
+  // API_URL used everywhere else in config.js.
+  const { marqueeMessages, status: dataStatus } = useSiteData();
   const [duration, setDuration] = useState(DEFAULT_DURATION);
   const trackRef = useRef(null);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    fetch(`${MARQUEE_API_URL}?action=getMarqueeMessages`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (cancelled) return;
-        const texts =
-          data.ok && Array.isArray(data.messages)
-            ? data.messages.map((m) => (m.text || "").trim()).filter(Boolean)
-            : [];
-        setMessages(texts);
-      })
-      .catch(() => {
-        if (!cancelled) setMessages([]);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const messages = useMemo(
+    () =>
+      Array.isArray(marqueeMessages)
+        ? marqueeMessages.map((m) => (m.text || "").trim()).filter(Boolean)
+        : [],
+    [marqueeMessages]
+  );
 
   // Measure the actual rendered width of one full set of messages (the
   // track holds two copies back to back, so half its scrollWidth is one
@@ -44,7 +33,7 @@ function HeroMarquee() {
   // how many messages there are or how long the text is. Re-measures on
   // window resize since text can wrap/reflow at different widths.
   useEffect(() => {
-    if (!messages || messages.length === 0) return;
+    if (messages.length === 0) return;
 
     const measure = () => {
       if (!trackRef.current) return;
@@ -59,7 +48,7 @@ function HeroMarquee() {
 
   // Nothing to show yet (still loading) or the sheet has no active
   // messages — render nothing.
-  if (!messages || messages.length === 0) return null;
+  if (dataStatus === "loading" || messages.length === 0) return null;
 
   return (
     <div className="relative w-full overflow-hidden border-y border-black/10 dark:border-white/10 bg-white dark:bg-black py-4 transition-colors">

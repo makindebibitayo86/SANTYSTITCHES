@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-import { API_URL } from "../config";
+import { useSiteData } from "../context/SiteDataContext";
 import { useCart } from "../context/CartContext";
 
 // Tracks whether the viewport is "mobile" width, reacting to resize/rotate.
@@ -343,34 +343,14 @@ function ShopCardSkeleton() {
 
 export default function Shop() {
   const [active, setActive] = useState("All");
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [dataError, setDataError] = useState(null);
-  const [refreshKey, setRefreshKey] = useState(0);
   const [openItem, setOpenItem] = useState(null);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadProducts() {
-      setLoading(true);
-      setDataError(null);
-      try {
-        const res = await fetch(`${API_URL}?action=list`);
-        if (!res.ok) throw new Error(`Request failed (${res.status})`);
-        const data = await res.json();
-        if (!data.ok) throw new Error(data.error || "Failed to load products");
-        if (!cancelled) setProducts(data.products || []);
-      } catch (err) {
-        if (!cancelled) setDataError(err.message || "Could not load the shop");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    loadProducts();
-    return () => { cancelled = true; };
-  }, [refreshKey]);
+  // Products now come from the shared bootstrap fetch (see
+  // SiteDataContext) instead of Shop.jsx fetching ?action=list on its own.
+  // "Try again" re-runs the whole shared fetch via refetch().
+  const { products, status: dataStatus, refetch } = useSiteData();
+  const loading = dataStatus === "loading";
+  const dataError = dataStatus === "error" ? "Could not load the shop" : null;
 
   const filtered = useMemo(
     () =>
@@ -514,7 +494,7 @@ export default function Shop() {
             <p className="text-sm text-black/50 dark:text-white/50">Couldn't load the shop right now.</p>
             <button
               type="button"
-              onClick={() => setRefreshKey((k) => k + 1)}
+              onClick={refetch}
               className="border border-black px-5 py-2.5 text-sm uppercase tracking-widest text-black transition-colors hover:bg-black hover:text-white dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-black"
             >
               Try again
@@ -543,7 +523,7 @@ export default function Shop() {
               onTouchCancel={() => resumeMarquee(1500)}
             >
               {loading
-                ? Array.from({ length: 4 }).map((_, i) => <ShopCardSkeleton key={i} />)
+                ? Array.from({ length: 6 }).map((_, i) => <ShopCardSkeleton key={i} />)
                 : track.map((product, i) => (
                     <ShopCard key={`${product.id}-${i}`} product={product} onOpen={setOpenItem} />
                   ))}

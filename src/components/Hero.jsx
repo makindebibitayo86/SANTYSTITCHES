@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import HeroMarquee from "./HeroMarquee";
 
-import { API_URL } from "../config";
+import { useSiteData } from "../context/SiteDataContext";
 
 // Cap on how many images from the sheet will be shown, in case the sheet
 // grows larger than intended. Set to null for no cap.
@@ -11,52 +11,30 @@ const MAX_SLIDES = null;
 const SLIDE_DURATION = 5000;
 
 function Hero() {
-  const [slides, setSlides] = useState([]);
+  // Hero images now come from the shared bootstrap fetch (see
+  // SiteDataContext) instead of Hero.jsx fetching getHeroImages on its own
+  // — the backend already returns active-only slides sorted by sortOrder,
+  // so no client-side filter/sort is needed here.
+  const { heroImages, status: dataStatus } = useSiteData();
   const [index, setIndex] = useState(0);
-  const [status, setStatus] = useState("loading"); // "loading" | "loaded" | "error"
 
-  // Fetch hero images from the sheet on mount. No local fallback — the
-  // hero reflects loading/error state directly instead of masking it.
+  const slides = useMemo(() => {
+    let urls = Array.isArray(heroImages)
+      ? heroImages.filter((img) => img.imageUrl).map((img) => img.imageUrl)
+      : [];
+    if (MAX_SLIDES) urls = urls.slice(0, MAX_SLIDES);
+    return urls;
+  }, [heroImages]);
+
+  // "loading" while the shared fetch is in flight; once it resolves, no
+  // slides means the same "error" state as before (nothing to show).
+  const status = dataStatus === "loading" ? "loading" : slides.length > 0 ? "loaded" : "error";
+
+  // Reset to the first slide whenever the slide set itself changes (e.g.
+  // after a refetch following an admin edit).
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadHeroImages() {
-      try {
-        const res = await fetch(
-          `${API_URL}?action=getHeroImages`
-        );
-        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-
-        const data = await res.json();
-        let urls = Array.isArray(data?.images)
-          ? data.images
-              .filter((img) => img.active !== false && img.imageUrl)
-              .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-              .map((img) => img.imageUrl)
-          : [];
-
-        if (MAX_SLIDES) urls = urls.slice(0, MAX_SLIDES);
-
-        if (cancelled) return;
-
-        if (urls.length > 0) {
-          setSlides(urls);
-          setIndex(0);
-          setStatus("loaded");
-        } else {
-          setStatus("error");
-        }
-      } catch (err) {
-        console.error("Failed to load hero images from sheet:", err);
-        if (!cancelled) setStatus("error");
-      }
-    }
-
-    loadHeroImages();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    setIndex(0);
+  }, [slides]);
 
   useEffect(() => {
     if (status !== "loaded" || slides.length === 0) return;

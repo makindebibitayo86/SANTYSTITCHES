@@ -9,18 +9,24 @@ import ContactSection from "./components/ContactSection";
 import Footer from "./components/Footer";
 import AdminPage from "./components/AdminPage";
 import { CartProvider } from "./context/CartContext";
+import { SiteDataProvider } from "./context/SiteDataContext";
 
+// Only the public site shares the cached bootstrap fetch — the admin panel
+// reads live, uncached data directly (it needs the true current sheet
+// state, not a shared snapshot that might be a few minutes old).
 function MainSite() {
   return (
-    <div className="min-h-screen bg-white dark:bg-black transition-colors">
-      <Navbar />
-      <Hero />
-      <Collections />
-      <Shop />
-      <About />
-      <ContactSection />
-      <Footer />
-    </div>
+    <SiteDataProvider>
+      <div className="min-h-screen bg-white dark:bg-black transition-colors">
+        <Navbar />
+        <Hero />
+        <Collections />
+        <Shop />
+        <About />
+        <ContactSection />
+        <Footer />
+      </div>
+    </SiteDataProvider>
   );
 }
 
