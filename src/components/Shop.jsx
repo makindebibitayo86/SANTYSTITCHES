@@ -471,7 +471,7 @@ export default function Shop() {
         </p>
 
         {/* Filters */}
-        <div className="mb-10 flex flex-wrap gap-2 font-['Work_Sans']">
+        <div className="mb-10 flex flex-wrap justify-center gap-2 font-['Work_Sans'] md:justify-start">
           {CATEGORIES.map((cat) => (
             <button
               key={cat}
